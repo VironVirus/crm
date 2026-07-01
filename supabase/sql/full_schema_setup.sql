@@ -449,12 +449,12 @@ create table if not exists public.members (
   date_of_birth date not null,
   address text not null,
   occupation text not null,
-  next_of_kin_name text not null,
-  next_of_kin_phone text not null,
-  next_of_kin_relationship text not null,
-  national_id_path text not null,
-  passport_photo_path text not null,
-  utility_bill_path text not null,
+  next_of_kin_name text,
+  next_of_kin_phone text,
+  next_of_kin_relationship text,
+  national_id_path text,
+  passport_photo_path text,
+  utility_bill_path text,
   onboarding_status text not null default 'pending'
     check (onboarding_status in ('pending', 'registered')),
   created_at timestamptz not null default timezone('utc'::text, now())
@@ -480,9 +480,9 @@ to authenticated
 using (public.current_user_is_admin());
 
 create sequence if not exists public.member_number_sequence
-  start with 1001
+  start with 1
   increment by 1
-  minvalue 1001;
+  minvalue 1;
 
 create or replace function public.assign_member_number(target_profile_id uuid)
 returns text
@@ -524,8 +524,7 @@ begin
   end if;
 
   generated_member_number := format(
-    'IFS-%s-%s',
-    to_char(current_date, 'YYYY'),
+    'IMPCS%s',
     lpad(nextval('public.member_number_sequence')::text, 5, '0')
   );
 

@@ -53,6 +53,7 @@ import {
   type PortalDashboardRecentTransaction,
   type PortalDashboardShareSummary,
 } from "@/lib/portal-dashboard";
+import { getMemberTierMeta, type MemberTier } from "@/lib/member-tier";
 import { type SavingsGrowthPoint } from "@/lib/savings";
 import {
   type MemberPaymentLoanOption,
@@ -66,8 +67,13 @@ type MemberDashboardPageViewProps = {
   memberId: string;
   memberName: string;
   memberNumber: string | null;
+  memberTier: MemberTier;
   paymentLoanOptions: MemberPaymentLoanOption[];
   pendingGuarantorCount: number;
+  profileCompletion: {
+    kycComplete: boolean;
+    nextOfKinComplete: boolean;
+  };
   recentTransactions: PortalDashboardRecentTransaction[];
   savingsBalance: number;
   savingsTrend: SavingsGrowthPoint[];
@@ -150,8 +156,10 @@ export default function MemberDashboardPageView({
   memberId,
   memberName,
   memberNumber,
+  memberTier,
   paymentLoanOptions,
   pendingGuarantorCount,
+  profileCompletion,
   recentTransactions,
   savingsBalance,
   savingsTrend,
@@ -160,6 +168,7 @@ export default function MemberDashboardPageView({
 }: MemberDashboardPageViewProps) {
   const [statementError, setStatementError] = useState<string | null>(null);
   const [isGeneratingStatement, setIsGeneratingStatement] = useState(false);
+  const tierMeta = getMemberTierMeta(memberTier);
 
   async function handleStatementDownload() {
     setStatementError(null);
@@ -214,13 +223,14 @@ export default function MemberDashboardPageView({
       <section className="rounded-[28px] border border-white/15 bg-[#111827] px-5 py-5 shadow-xl shadow-black/30">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <Badge className="w-fit">Member Dashboard</Badge>
+            <Badge className="w-fit">{tierMeta.label}</Badge>
             <h2 className="font-['Outfit'] text-3xl font-semibold text-white">
-              Welcome back, {memberName}
+              Welcome, {memberName}
             </h2>
             <p className="text-sm text-slate-200">
               {memberNumber ?? "Member number pending"}
             </p>
+            <p className="text-sm text-slate-300">{tierMeta.description}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <MakePaymentDialog
@@ -228,12 +238,13 @@ export default function MemberDashboardPageView({
               memberId={memberId}
               memberName={memberName}
               memberNumber={memberNumber}
+              memberTier={memberTier}
               shareConfig={shareConfig}
             />
             <Button asChild variant="secondary">
-              <Link href="/portal/loans">
+              <Link href={memberTier === "tier_3" ? "/portal/loans" : "/portal/profile"}>
                 <Landmark className="mr-2 h-4 w-4" />
-                Apply for Loan
+                {memberTier === "tier_3" ? "Apply for Loan" : "Complete Profile"}
               </Link>
             </Button>
             <Button
@@ -258,6 +269,28 @@ export default function MemberDashboardPageView({
         </div>
       </section>
 
+      {memberTier !== "tier_3" ? (
+        <section className="rounded-[28px] border border-amber-300/20 bg-amber-400/10 px-5 py-5 shadow-xl shadow-black/20">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.24em] text-amber-200">
+                Membership progress
+              </p>
+              <h3 className="font-['Outfit'] text-2xl font-semibold text-white">
+                {tierMeta.nextStep}
+              </h3>
+              <p className="text-sm text-amber-100/90">
+                Next of kin completed: {profileCompletion.nextOfKinComplete ? "Yes" : "No"}.
+                KYC completed: {profileCompletion.kycComplete ? "Yes" : "No"}.
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/portal/profile">Open Profile</Link>
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           description="Mandatory and voluntary savings combined."
@@ -267,21 +300,33 @@ export default function MemberDashboardPageView({
         />
         <SummaryCard
           description={
-            activeLoan?.nextRepaymentDate
+            memberTier !== "tier_3"
+              ? "Loans unlock when you complete next of kin and KYC."
+              : activeLoan?.nextRepaymentDate
               ? `Next: ${formatDisplayDate(activeLoan.nextRepaymentDate)} · ${formatNaira(activeLoan.nextRepaymentAmount)}`
               : "No active repayment schedule available."
           }
           icon={CalendarClock}
           label="Active loan"
-          value={activeLoan ? formatNaira(activeLoan.outstandingBalance) : "None"}
+          value={
+            memberTier !== "tier_3"
+              ? "Locked"
+              : activeLoan
+                ? formatNaira(activeLoan.outstandingBalance)
+                : "None"
+          }
         />
         <SummaryCard
-          description={`${shares.totalShares.toLocaleString("en-NG")} share unit${
-            shares.totalShares === 1 ? "" : "s"
-          } currently held.`}
+          description={
+            memberTier !== "tier_3"
+              ? "Share access unlocks at Tier 3."
+              : `${shares.totalShares.toLocaleString("en-NG")} share unit${
+                  shares.totalShares === 1 ? "" : "s"
+                } currently held.`
+          }
           icon={TrendingUp}
           label="Shares held"
-          value={formatNaira(shares.totalValue)}
+          value={memberTier !== "tier_3" ? "Locked" : formatNaira(shares.totalValue)}
         />
         <SummaryCard
           description="Invitations waiting for your accept or decline decision."
@@ -436,7 +481,7 @@ export default function MemberDashboardPageView({
               Quick Actions
             </Badge>
             <CardTitle className="font-['Outfit'] text-2xl text-white">
-              Member tasks
+              Quick actions
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
@@ -445,12 +490,19 @@ export default function MemberDashboardPageView({
               memberId={memberId}
               memberName={memberName}
               memberNumber={memberNumber}
+              memberTier={memberTier}
               shareConfig={shareConfig}
             />
             <Button asChild variant="secondary">
-              <Link href="/portal/loans">
+              <Link href={memberTier === "tier_3" ? "/portal/loans" : "/portal/profile"}>
                 <Landmark className="mr-2 h-4 w-4" />
-                Apply for Loan
+                {memberTier === "tier_3" ? "Apply for Loan" : "Unlock Loans"}
+              </Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/portal/profile">
+                <Wallet className="mr-2 h-4 w-4" />
+                Update Profile
               </Link>
             </Button>
             <Button
@@ -547,16 +599,17 @@ export default function MemberDashboardPageView({
               <Wallet className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-medium text-white">Portal sections</p>
+              <p className="font-medium text-white">Your membership journey</p>
               <p className="text-sm text-slate-300">
-                Savings, loans, statements, and notifications are available
-                from the main member navigation.
+                {memberTier === "tier_3"
+                  ? "Your profile is complete and every member portal feature is available."
+                  : tierMeta.nextStep}
               </p>
             </div>
           </div>
           <Button asChild variant="secondary">
-            <Link href="/portal/savings">
-              Open Savings
+            <Link href={memberTier === "tier_3" ? "/portal/savings" : "/portal/profile"}>
+              {memberTier === "tier_3" ? "Open Savings" : "Complete Profile"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

@@ -118,7 +118,7 @@ export default function AdminSharesPageView({
           <div className="space-y-1">
             <p className="font-medium text-white">{row.original.memberName}</p>
             <p className="text-xs text-slate-400">
-              {row.original.memberNumber ?? "No member number"} ·{" "}
+              {row.original.memberNumber ?? "Member number pending"} ·{" "}
               {row.original.memberEmail}
             </p>
           </div>

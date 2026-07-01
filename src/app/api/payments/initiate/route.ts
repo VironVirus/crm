@@ -14,6 +14,7 @@ import {
   formatPaymentTypeLabel,
   roundCurrency,
 } from "@/lib/payments";
+import { getMemberTier } from "@/lib/member-tier";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { formatAccountTypeLabel } from "@/lib/savings";
@@ -31,7 +32,13 @@ type ProfileRecord = {
 
 type MemberRecord = {
   id: string;
+  national_id_path: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
   onboarding_status: "pending" | "registered";
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
 };
 
 type PaymentRateLimitResult = {
@@ -118,7 +125,9 @@ export async function POST(request: NextRequest) {
         .maybeSingle(),
       admin
         .from("members")
-        .select("id, onboarding_status")
+        .select(
+          "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+        )
         .eq("id", user.id)
         .maybeSingle(),
     ]);
@@ -151,6 +160,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const memberTier = getMemberTier(memberRecord);
+
   const amount = roundCurrency(parsed.data.amount);
   const txRef = buildFlutterwaveTxRef(profileRecord.member_number);
   let description = formatPaymentTypeLabel(parsed.data.payment_type);
@@ -173,6 +184,13 @@ export async function POST(request: NextRequest) {
         break;
       }
       case "loan_repayment": {
+        if (memberTier !== "tier_3") {
+          return jsonError(
+            "Complete your profile to Tier 3 before using loan payments online.",
+            403,
+          );
+        }
+
         const loan = await getLoanRepaymentTarget(admin, {
           loanId: parsed.data.metadata.loan_id,
           memberId: user.id,
@@ -197,6 +215,13 @@ export async function POST(request: NextRequest) {
         break;
       }
       case "share_purchase": {
+        if (memberTier !== "tier_3") {
+          return jsonError(
+            "Complete your profile to Tier 3 before buying shares online.",
+            403,
+          );
+        }
+
         const quote = await getSharePurchaseQuote(admin, amount);
         description = `Share purchase for ${quote.sharesCount} share unit${
           quote.sharesCount === 1 ? "" : "s"

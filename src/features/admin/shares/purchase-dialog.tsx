@@ -158,7 +158,7 @@ export function SharePurchaseDialog({
             <div className="rounded-[24px] border border-emerald-400/15 bg-emerald-500/10 p-4">
               <p className="font-medium text-white">{selectedMember.fullName}</p>
               <p className="mt-1 text-sm text-slate-300">
-                {selectedMember.memberNumber ?? "No member number"} · Currently
+                {selectedMember.memberNumber ?? "Member number pending"} · Currently
                 holding {selectedMember.totalShares} share
                 {selectedMember.totalShares === 1 ? "" : "s"}
               </p>

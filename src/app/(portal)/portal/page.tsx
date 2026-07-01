@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import MemberDashboardPageView from "@/features/portal/dashboard/page-view";
+import { getMemberTier } from "@/lib/member-tier";
 import {
   parseMoney,
   type LoanStatus,
@@ -26,6 +27,15 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 type ProfileRecord = {
   full_name: string;
   member_number: string | null;
+};
+
+type MemberRecord = {
+  national_id_path: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
 };
 
 type SavingsAccountRecord = {
@@ -151,6 +161,7 @@ export default async function MemberDashboardPage() {
 
   const [
     profileResult,
+    memberResult,
     savingsAccountsResult,
     loansResult,
     guarantorRequestsResult,
@@ -160,6 +171,13 @@ export default async function MemberDashboardPage() {
     supabase
       .from("profiles")
       .select("full_name, member_number")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("members")
+      .select(
+        "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+      )
       .eq("id", user.id)
       .maybeSingle(),
     supabase
@@ -477,10 +495,12 @@ export default async function MemberDashboardPage() {
     .slice(0, 5);
 
   const profile = profileResult.data as ProfileRecord | null;
+  const member = memberResult.data as MemberRecord | null;
   const guarantorRequests =
     (guarantorRequestsResult.data as LoanGuarantorRecord[] | null) ?? [];
   const errors = [
     profileResult.error?.message,
+    memberResult.error?.message,
     savingsAccountsResult.error?.message,
     loansResult.error?.message,
     guarantorRequestsResult.error?.message,
@@ -501,6 +521,19 @@ export default async function MemberDashboardPage() {
       memberId={user.id}
       memberName={profile?.full_name ?? user.email ?? "Member"}
       memberNumber={profile?.member_number ?? null}
+      memberTier={getMemberTier(member)}
+      profileCompletion={{
+        kycComplete: Boolean(
+          member?.national_id_path &&
+            member?.passport_photo_path &&
+            member?.utility_bill_path,
+        ),
+        nextOfKinComplete: Boolean(
+          member?.next_of_kin_name &&
+            member?.next_of_kin_phone &&
+            member?.next_of_kin_relationship,
+        ),
+      }}
       paymentLoanOptions={paymentLoanOptions}
       pendingGuarantorCount={guarantorRequests.length}
       recentTransactions={recentTransactions}

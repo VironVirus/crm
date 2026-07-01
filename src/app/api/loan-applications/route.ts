@@ -8,6 +8,7 @@ import {
   roundCurrency,
   type LoanInterestType,
 } from "@/lib/loans";
+import { getMemberTier } from "@/lib/member-tier";
 import { sendMemberNotification } from "@/lib/notification-dispatch";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -40,7 +41,13 @@ type ProfileRecord = {
 
 type MemberRecord = {
   id: string;
+  national_id_path: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
   onboarding_status: "pending" | "registered";
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
 };
 
 type LoanGuarantorRecord = {
@@ -131,7 +138,9 @@ async function createGuarantorInviteFallback(
       .maybeSingle(),
     admin
       .from("members")
-      .select("id, onboarding_status")
+      .select(
+        "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+      )
       .eq("id", guarantorMemberId)
       .maybeSingle(),
     admin
@@ -189,6 +198,14 @@ async function createGuarantorInviteFallback(
     return {
       ok: false,
       message: "Only fully registered members can act as guarantors.",
+      status: 400,
+    };
+  }
+
+  if (getMemberTier(guarantorMemberRecord) !== "tier_3") {
+    return {
+      ok: false,
+      message: "Only Tier 3 members can act as guarantors for loans.",
       status: 400,
     };
   }
@@ -314,7 +331,13 @@ export async function POST(request: NextRequest) {
     { data: applicantProfile, error: applicantProfileError },
   ] =
     await Promise.all([
-      admin.from("members").select("id").eq("id", user.id).maybeSingle(),
+      admin
+        .from("members")
+        .select(
+          "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+        )
+        .eq("id", user.id)
+        .maybeSingle(),
       admin
         .from("loan_products")
         .select(
@@ -328,6 +351,15 @@ export async function POST(request: NextRequest) {
   if (memberError || !memberRecord) {
     return jsonError(
       "Your member registration record could not be verified yet.",
+      403,
+    );
+  }
+
+  const applicantMemberRecord = memberRecord as MemberRecord;
+
+  if (getMemberTier(applicantMemberRecord) !== "tier_3") {
+    return jsonError(
+      "Complete your profile to Tier 3 before applying for a loan.",
       403,
     );
   }

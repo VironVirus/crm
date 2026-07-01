@@ -1,13 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import {
-  KYC_FIELD_CONFIG,
-  KYC_STORAGE_BUCKET,
-  type KycFieldName,
-  memberRegistrationTextSchema,
-  sanitizeStorageFilename,
-  validateKycFile,
-} from "@/lib/validation/member-registration";
+import { memberRegistrationSchema } from "@/lib/validation/member-registration";
 
 export const runtime = "nodejs";
 
@@ -18,8 +11,6 @@ type CreateMemberRegistrationSuccess = {
   fullName: string;
   memberNumber: string;
 };
-
-const KYC_FIELD_NAMES = Object.keys(KYC_FIELD_CONFIG) as KycFieldName[];
 
 function jsonError(
   message: string,
@@ -33,39 +24,6 @@ function jsonError(
     },
     { status },
   );
-}
-
-async function uploadKycDocument(
-  memberId: string,
-  fieldName: KycFieldName,
-  file: File,
-) {
-  const admin = createSupabaseAdminClient();
-  const timestamp = Date.now();
-  const filename = sanitizeStorageFilename(file.name || `${fieldName}-${timestamp}`);
-  const objectPath = `${memberId}/${fieldName}/${timestamp}-${filename}`;
-
-  const { error } = await admin.storage
-    .from(KYC_STORAGE_BUCKET)
-    .upload(objectPath, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (error) {
-    throw new Error(`Unable to upload ${KYC_FIELD_CONFIG[fieldName].label}.`);
-  }
-
-  return objectPath;
-}
-
-async function removeUploadedFiles(paths: string[]) {
-  if (paths.length === 0) {
-    return;
-  }
-
-  const admin = createSupabaseAdminClient();
-  await admin.storage.from(KYC_STORAGE_BUCKET).remove(paths);
 }
 
 async function assignMemberNumber(memberId: string) {
@@ -114,69 +72,37 @@ export async function POST(request: NextRequest) {
     return jsonError("Unable to read the registration form submission.", 400);
   }
 
-  const textPayload = {
-    fullName: String(formData.get("fullName") ?? ""),
-    email: String(formData.get("email") ?? ""),
-    phone: String(formData.get("phone") ?? ""),
-    dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
+  const parsedPayload = memberRegistrationSchema.safeParse({
     address: String(formData.get("address") ?? ""),
-    occupation: String(formData.get("occupation") ?? ""),
-    nextOfKinName: String(formData.get("nextOfKinName") ?? ""),
-    nextOfKinPhone: String(formData.get("nextOfKinPhone") ?? ""),
-    nextOfKinRelationship: String(formData.get("nextOfKinRelationship") ?? ""),
-    password: String(formData.get("password") ?? ""),
     confirmPassword: String(formData.get("confirmPassword") ?? ""),
-  };
+    dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    fullName: String(formData.get("fullName") ?? ""),
+    occupation: String(formData.get("occupation") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+  });
 
-  const parsedTextPayload = memberRegistrationTextSchema.safeParse(textPayload);
-
-  if (!parsedTextPayload.success) {
+  if (!parsedPayload.success) {
     return jsonError(
       "Please review the highlighted registration fields.",
       400,
-      extractFieldErrors(parsedTextPayload.error),
-    );
-  }
-
-  const kycFiles = KYC_FIELD_NAMES.reduce(
-    (accumulator, fieldName) => {
-      accumulator[fieldName] = formData.get(fieldName);
-      return accumulator;
-    },
-    {} as Record<KycFieldName, FormDataEntryValue | null>,
-  );
-
-  const fileErrors: FieldErrors = {};
-
-  KYC_FIELD_NAMES.forEach((fieldName) => {
-    const errorMessage = validateKycFile(fieldName, kycFiles[fieldName]);
-
-    if (errorMessage) {
-      fileErrors[fieldName] = [errorMessage];
-    }
-  });
-
-  if (Object.keys(fileErrors).length > 0) {
-    return jsonError(
-      "Please upload each required KYC document before submitting.",
-      400,
-      fileErrors,
+      extractFieldErrors(parsedPayload.error),
     );
   }
 
   const admin = createSupabaseAdminClient();
-  const uploadedPaths: string[] = [];
   let createdUserId: string | null = null;
 
   try {
     const { data: authData, error: authError } =
       await admin.auth.admin.createUser({
-        email: parsedTextPayload.data.email,
-        password: parsedTextPayload.data.password,
+        email: parsedPayload.data.email,
+        password: parsedPayload.data.password,
         email_confirm: true,
         user_metadata: {
-          full_name: parsedTextPayload.data.fullName,
-          phone: parsedTextPayload.data.phone,
+          full_name: parsedPayload.data.fullName,
+          phone: parsedPayload.data.phone,
         },
       });
 
@@ -186,7 +112,7 @@ export async function POST(request: NextRequest) {
         authError?.message?.toLowerCase().includes("exists");
 
       return jsonError(
-        authError?.message || "Unable to create the member's auth account.",
+        authError?.message || "Unable to create the member auth account.",
         emailTaken ? 409 : 400,
         emailTaken
           ? {
@@ -198,25 +124,12 @@ export async function POST(request: NextRequest) {
 
     createdUserId = authData.user.id;
 
-    const uploadedDocumentPaths = {} as Record<KycFieldName, string>;
-
-    for (const fieldName of KYC_FIELD_NAMES) {
-      const path = await uploadKycDocument(
-        createdUserId,
-        fieldName,
-        kycFiles[fieldName] as File,
-      );
-
-      uploadedDocumentPaths[fieldName] = path;
-      uploadedPaths.push(path);
-    }
-
     const { error: profileError } = await admin.from("profiles").upsert(
       {
         id: createdUserId,
-        full_name: parsedTextPayload.data.fullName,
-        email: parsedTextPayload.data.email,
-        phone: parsedTextPayload.data.phone,
+        full_name: parsedPayload.data.fullName,
+        email: parsedPayload.data.email,
+        phone: parsedPayload.data.phone,
         role: "member",
         status: "active",
       },
@@ -232,16 +145,16 @@ export async function POST(request: NextRequest) {
     const { error: memberError } = await admin.from("members").upsert(
       {
         id: createdUserId,
-        date_of_birth: parsedTextPayload.data.dateOfBirth,
-        address: parsedTextPayload.data.address,
-        occupation: parsedTextPayload.data.occupation,
-        next_of_kin_name: parsedTextPayload.data.nextOfKinName,
-        next_of_kin_phone: parsedTextPayload.data.nextOfKinPhone,
-        next_of_kin_relationship: parsedTextPayload.data.nextOfKinRelationship,
-        national_id_path: uploadedDocumentPaths.nationalId,
-        passport_photo_path: uploadedDocumentPaths.passportPhoto,
-        utility_bill_path: uploadedDocumentPaths.utilityBill,
+        address: parsedPayload.data.address,
+        date_of_birth: parsedPayload.data.dateOfBirth,
+        national_id_path: null,
+        next_of_kin_name: null,
+        next_of_kin_phone: null,
+        next_of_kin_relationship: null,
+        occupation: parsedPayload.data.occupation,
         onboarding_status: "pending",
+        passport_photo_path: null,
+        utility_bill_path: null,
       },
       {
         onConflict: "id",
@@ -255,15 +168,13 @@ export async function POST(request: NextRequest) {
     const memberNumber = await assignMemberNumber(createdUserId);
 
     const response: CreateMemberRegistrationSuccess = {
-      email: parsedTextPayload.data.email,
-      fullName: parsedTextPayload.data.fullName,
+      email: parsedPayload.data.email,
+      fullName: parsedPayload.data.fullName,
       memberNumber,
     };
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    await removeUploadedFiles(uploadedPaths);
-
     if (createdUserId) {
       await admin.auth.admin.deleteUser(createdUserId);
     }

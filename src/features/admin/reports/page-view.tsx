@@ -567,7 +567,7 @@ export default function AdminReportsPageView({
                 {selectedMember?.fullName ?? "No member selected"}
               </p>
               <p className="mt-1 text-sm text-slate-300">
-                {selectedMember?.memberNumber ?? "No member number"}{" "}
+                {selectedMember?.memberNumber ?? "Member number pending"}{" "}
                 {selectedMember ? `· ${selectedMember.email}` : ""}
               </p>
             </div>
@@ -692,7 +692,7 @@ export default function AdminReportsPageView({
                   <div className="space-y-1">
                     <p className="font-medium text-white">{row.memberName}</p>
                     <p className="text-sm text-slate-400">
-                      {row.memberNumber ?? "No member number"} · {row.productName}
+                      {row.memberNumber ?? "Member number pending"} · {row.productName}
                     </p>
                   </div>
                   <Badge className={getLoanBookStatusTone(row.overdueStatus)} variant="outline">

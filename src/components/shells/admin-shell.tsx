@@ -1,193 +1,198 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "../../app/layout.module.css";
+import { useMemo, useState } from "react";
 import {
+  BarChart3,
+  Building2,
+  Coins,
+  Landmark,
   LayoutDashboard,
+  Menu,
   Users,
   Wallet,
-  Landmark,
-  Vote,
-  Coins,
-  BarChart3,
-  Search,
-  Bell,
-  Sun,
-  Moon,
-  Menu,
   X,
-  LogOut,
-  Building2,
-  HelpCircle,
-  Settings2,
 } from "lucide-react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 
-interface AppShellProps {
+type AdminShellProps = {
   children: React.ReactNode;
   userEmail?: string;
+};
+
+type NavigationItem = {
+  href: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+};
+
+const adminItems: NavigationItem[] = [
+  { href: "/admin", icon: LayoutDashboard, label: "Home" },
+  { href: "/admin/members", icon: Users, label: "Members" },
+  { href: "/admin/finance", icon: Wallet, label: "Savings" },
+  { href: "/admin/loans", icon: Landmark, label: "Loans" },
+  { href: "/admin/reports", icon: BarChart3, label: "Reports" },
+  { href: "/admin/shares", icon: Coins, label: "Shares" },
+];
+
+function isActivePath(pathname: string, href: string) {
+  return href === "/admin" ? pathname === href : pathname.startsWith(href);
 }
 
-export default function AdminShell({
-  children,
-  userEmail,
-}: AppShellProps) {
+export default function AdminShell({ children, userEmail }: AdminShellProps) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [notificationCount, setNotificationCount] = useState(3);
-  const userName = userEmail ?? "Administrator";
-  const initials = userName
-    .split(/[\s@._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((value) => value[0]?.toUpperCase())
-    .join("") || "IC";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const initials =
+    userEmail
+      ?.split(/[\s@._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((value) => value[0]?.toUpperCase())
+      .join("") ?? "AD";
 
-  // Initialize theme from localStorage or system preference
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.setAttribute("data-theme", savedTheme);
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const initialTheme = prefersDark ? "dark" : "light";
-      setTheme(initialTheme);
-      document.documentElement.setAttribute("data-theme", initialTheme);
-    }
-  }, []);
-
-  const toggleTheme = (newTheme: "dark" | "light") => {
-    setTheme(newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-  };
-
-  const navItems = [
-    { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
-    { name: "Members Directory", path: "/admin/members", icon: Users },
-    { name: "Share Capital", path: "/admin/shares", icon: Coins },
-    { name: "Savings Management", path: "/admin/finance", icon: Wallet },
-    { name: "Loan Processing", path: "/admin/loans", icon: Landmark },
-    { name: "Reports & Exports", path: "/admin/reports", icon: BarChart3 },
-    { name: "Governance & Voting", path: "/admin/governance", icon: Vote },
-    { name: "System Settings", path: "/admin/settings", icon: Settings2 },
-  ];
+  const primaryItems = useMemo(() => adminItems.slice(0, 5), []);
+  const moreItems = useMemo(() => adminItems.slice(5), []);
 
   return (
-    <div className={styles.wrapper}>
-      {/* Sidebar navigation */}
-      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
-        <div className={styles.logoContainer}>
-          <div className={styles.logoIcon}>
-            <Building2 size={20} />
-          </div>
-          <div>
-            <h1 className={styles.logoText}>Ifemelumma</h1>
-            <span className={styles.logoSub}>Cooperative Society</span>
-          </div>
-        </div>
-
-        <nav className={styles.navSection}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.path === "/admin"
-                ? pathname === item.path
-                : pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={`${styles.navLink} ${isActive ? styles.activeNavLink : ""}`}
-              >
-                <Icon size={18} />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className={styles.sidebarFooter}>
-          <div className={styles.userSummary}>
-            <div className={styles.avatar}>{initials}</div>
-            <div className={styles.userInfo}>
-              <span className={styles.userName}>{userName}</span>
-              <span className={styles.userRole}>Administrative access</span>
-            </div>
-          </div>
-          <SignOutButton
-            className={styles.navLink}
-            icon={<LogOut size={16} />}
-            label="Sign out"
-          />
-        </div>
-      </aside>
-
-      {/* Main Container */}
-      <div className={styles.mainContainer}>
-        {/* Top Header */}
-        <header className={styles.header}>
-          <div className={styles.headerLeft}>
-            <button className={styles.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-            
-            <div className={styles.searchBar}>
-              <Search size={16} className={styles.searchIcon} style={{ color: "var(--text-muted)" }} />
-              <input
-                type="text"
-                placeholder="Search members, loans, approvals..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-              />
-            </div>
-          </div>
-
-          <div className={styles.headerRight}>
-            <div className={styles.themeSelector}>
-              <button
-                className={`${styles.themeOption} ${theme === "light" ? styles.themeOptionActive : ""}`}
-                onClick={() => toggleTheme("light")}
-                title="Switch to light mode"
-              >
-                <Sun size={15} />
-              </button>
-              <button
-                className={`${styles.themeOption} ${theme === "dark" ? styles.themeOptionActive : ""}`}
-                onClick={() => toggleTheme("dark")}
-                title="Switch to dark mode"
-              >
-                <Moon size={15} />
-              </button>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.12),_transparent_28%),linear-gradient(180deg,_#05070c,_#0b1220)] text-white">
+      <div className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
+        <header className="sticky top-4 z-30 mb-6 rounded-[30px] border border-white/15 bg-[#111827]/95 px-5 py-4 shadow-2xl shadow-black/30 backdrop-blur">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-amber-300 text-slate-950 shadow-lg">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-['Outfit'] text-lg font-semibold text-white">
+                  Ifemelumma Cooperative Society
+                </p>
+                <p className="text-xs uppercase tracking-[0.24em] text-amber-300">
+                  Admin dashboard
+                </p>
+              </div>
             </div>
 
-            <button 
-              className={styles.iconBtn} 
-              onClick={() => setNotificationCount(0)}
-              title="Notifications"
+            <button
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+              onClick={() => setMenuOpen(true)}
+              type="button"
             >
-              <Bell size={18} />
-              {notificationCount > 0 && <span className={styles.badgeDot} />}
+              <Menu className="h-5 w-5" />
             </button>
+          </div>
 
-            <button className={styles.iconBtn} title="System Help Center">
-              <HelpCircle size={18} />
-            </button>
+          <div className="mt-4 rounded-[26px] border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
+            Manage members, savings, loans, shares, and reports from one place.
           </div>
         </header>
 
-        {/* Dynamic page content */}
-        <main className={styles.pageBody}>
-          {children}
-        </main>
+        <main>{children}</main>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#08111d]/95 px-3 py-3 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2">
+          {primaryItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActivePath(pathname, item.href);
+
+            return (
+              <Link
+                key={item.href}
+                className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
+                  active
+                    ? "bg-emerald-500/15 text-emerald-100"
+                    : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                }`}
+                href={item.href}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+
+          <button
+            className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
+              pathname.startsWith("/admin/shares")
+                ? "bg-emerald-500/15 text-emerald-100"
+                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+            }`}
+            onClick={() => setMenuOpen(true)}
+            type="button"
+          >
+            <Menu className="h-5 w-5" />
+            <span>Menu</span>
+          </button>
+        </div>
+      </nav>
+
+      {menuOpen ? (
+        <div className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm">
+          <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-white/10 bg-[#0b1220] p-5 shadow-2xl shadow-black/60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-100">
+                  {initials}
+                </div>
+                <div>
+                  <p className="font-medium text-white">{userEmail ?? "Administrator"}</p>
+                  <p className="text-sm text-slate-300">Administrative access</p>
+                </div>
+              </div>
+              <button
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white"
+                onClick={() => setMenuOpen(false)}
+                type="button"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                Navigation
+              </p>
+              <div className="space-y-2">
+                {adminItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActivePath(pathname, item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                        active
+                          ? "bg-emerald-500/15 text-emerald-100"
+                          : "text-slate-200 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {moreItems.length > 0 ? (
+              <div className="mt-6 rounded-[26px] border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
+                Additional sections stay grouped here so the main dashboard
+                navigation remains clean on both desktop and mobile.
+              </div>
+            ) : null}
+
+            <div className="mt-8">
+              <SignOutButton
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+                label="Sign out"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

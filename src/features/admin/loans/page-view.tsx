@@ -135,7 +135,7 @@ function LoanApplicationCard({
           <div className="space-y-1">
             <p className="font-medium text-white">{application.member.fullName}</p>
             <p className="text-xs text-slate-400">
-              {application.member.memberNumber ?? "No member number"} ·{" "}
+              {application.member.memberNumber ?? "Member number pending"} ·{" "}
               {application.product.name}
             </p>
           </div>
@@ -651,7 +651,7 @@ export default function AdminLoansPageView({
                   {activeApplication.member.fullName}
                 </DialogTitle>
                 <DialogDescription>
-                  {activeApplication.member.memberNumber ?? "No member number"} ·{" "}
+                  {activeApplication.member.memberNumber ?? "Member number pending"} ·{" "}
                   {formatNaira(activeApplication.amountRequested)} over{" "}
                   {activeApplication.tenureMonths} months.
                 </DialogDescription>
@@ -723,6 +723,54 @@ export default function AdminLoansPageView({
                     </CardContent>
                   </Card>
                 </div>
+
+                <Card className="bg-white/[0.04]">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className="h-5 w-5 text-emerald-200" />
+                      <CardTitle className="text-lg">Profile completion</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-300">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Next of kin
+                      </p>
+                      <p className="mt-2 text-white">
+                        {activeApplication.member.nextOfKinName
+                          ? `${activeApplication.member.nextOfKinName} · ${
+                              activeApplication.member.nextOfKinRelationship ??
+                              "Relationship not set"
+                            }`
+                          : "Not added yet"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {activeApplication.member.nextOfKinPhone ??
+                          "No next of kin phone on file"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-300">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        KYC status
+                      </p>
+                      <p className="mt-2 text-white">
+                        {activeApplication.member.documents.some(
+                          (document) => document.path,
+                        )
+                          ? "Documents uploaded"
+                          : "No KYC uploaded yet"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-300">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Member number
+                      </p>
+                      <p className="mt-2 text-white">
+                        {activeApplication.member.memberNumber ?? "Pending"}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <Card className="bg-white/[0.04]">
                   <CardHeader>
@@ -840,7 +888,7 @@ export default function AdminLoansPageView({
                                     {guarantor.fullName}
                                   </p>
                                   <p className="mt-1 text-xs text-slate-400">
-                                    {guarantor.memberNumber ?? "No member number"} ·{" "}
+                                    {guarantor.memberNumber ?? "Member number pending"} ·{" "}
                                     {guarantor.email}
                                   </p>
                                 </div>
@@ -906,8 +954,10 @@ export default function AdminLoansPageView({
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-3 md:grid-cols-3">
-                    {activeApplication.member.documents.map((document) =>
-                      document.signedUrl ? (
+                    {activeApplication.member.documents.some((document) => document.path) ? (
+                      activeApplication.member.documents.map((document) =>
+                        document.path ? (
+                          document.signedUrl ? (
                         <a
                           key={document.label}
                           className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200 transition hover:border-emerald-400/25 hover:bg-slate-950"
@@ -924,20 +974,26 @@ export default function AdminLoansPageView({
                             <ArrowRight className="h-3.5 w-3.5" />
                           </div>
                         </a>
-                      ) : (
-                        <div
-                          key={document.label}
-                          className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200"
-                        >
-                          <p className="font-medium text-white">{document.label}</p>
-                          <p className="mt-2 break-all text-xs text-slate-400">
-                            {document.path}
-                          </p>
-                          <div className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-500">
-                            Signed link unavailable
-                          </div>
-                        </div>
-                      ),
+                          ) : (
+                            <div
+                              key={document.label}
+                              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200"
+                            >
+                              <p className="font-medium text-white">{document.label}</p>
+                              <p className="mt-2 break-all text-xs text-slate-400">
+                                {document.path}
+                              </p>
+                              <div className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-500">
+                                Signed link unavailable
+                              </div>
+                            </div>
+                          )
+                        ) : null,
+                      )
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-10 text-center text-sm text-slate-400 md:col-span-3">
+                        No KYC documents have been uploaded for this member yet.
+                      </div>
                     )}
                   </CardContent>
                 </Card>

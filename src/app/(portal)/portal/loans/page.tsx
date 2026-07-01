@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import MemberLoansPageView from "@/features/portal/loans/page-view";
+import { getMemberTier } from "@/lib/member-tier";
 import {
   calculateLoanEstimate,
   parseMoney,
@@ -24,6 +25,13 @@ type ProfileRecord = {
 
 type MemberRecord = {
   id: string;
+  national_id_path: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
+  onboarding_status: "pending" | "registered";
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
 };
 
 type LoanProductRecord = {
@@ -101,6 +109,7 @@ export default async function PortalLoansPage() {
 
   const [
     profileResult,
+    memberResult,
     productsResult,
     applicationsResult,
     savingsResult,
@@ -109,6 +118,13 @@ export default async function PortalLoansPage() {
     admin
       .from("profiles")
       .select("id, full_name, email, phone, member_number, status")
+      .eq("id", user.id)
+      .maybeSingle(),
+    admin
+      .from("members")
+      .select(
+        "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+      )
       .eq("id", user.id)
       .maybeSingle(),
     admin
@@ -132,9 +148,18 @@ export default async function PortalLoansPage() {
       .eq("status", "active"),
     admin
       .from("members")
-      .select("id")
+      .select(
+        "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+      )
       .eq("onboarding_status", "registered"),
   ]);
+
+  const currentMember = memberResult.data as MemberRecord | null;
+  const memberTier = getMemberTier(currentMember);
+
+  if (memberTier !== "tier_3") {
+    redirect("/portal/profile");
+  }
 
   const rawApplications =
     (applicationsResult.data as LoanApplicationRecord[] | null) ?? [];
@@ -168,6 +193,7 @@ export default async function PortalLoansPage() {
       : { data: [] as ProfileRecord[], error: null };
 
   const eligibleMemberIds = ((registeredMembersResult.data as MemberRecord[] | null) ?? [])
+    .filter((member) => getMemberTier(member) === "tier_3")
     .map((member) => member.id)
     .filter((memberId) => memberId !== user.id);
 
@@ -284,6 +310,7 @@ export default async function PortalLoansPage() {
 
   const errors = [
     profileResult.error?.message,
+    memberResult.error?.message,
     productsResult.error?.message,
     applicationsResult.error?.message,
     savingsResult.error?.message,

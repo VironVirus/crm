@@ -728,7 +728,7 @@ export default function MemberLoansPageView({
                           <div>
                             <p className="font-medium text-white">{candidate.fullName}</p>
                             <p className="text-xs text-slate-400">
-                              {candidate.memberNumber ?? "No member number yet"} ·{" "}
+                              {candidate.memberNumber ?? "Member number pending"} ·{" "}
                               {candidate.email}
                             </p>
                           </div>
@@ -764,7 +764,7 @@ export default function MemberLoansPageView({
                                 {guarantor.fullName}
                               </p>
                               <p className="text-sm text-slate-300">
-                                {guarantor.memberNumber ?? "No member number yet"} ·{" "}
+                                {guarantor.memberNumber ?? "Member number pending"} ·{" "}
                                 {guarantor.email}
                               </p>
                             </div>
@@ -879,7 +879,7 @@ export default function MemberLoansPageView({
                           >
                             <p className="font-medium text-white">{guarantor.fullName}</p>
                             <p className="mt-1 text-slate-300">
-                              {guarantor.memberNumber ?? "No member number yet"} ·{" "}
+                              {guarantor.memberNumber ?? "Member number pending"} ·{" "}
                               {guarantor.email}
                             </p>
                           </div>
@@ -1058,7 +1058,7 @@ export default function MemberLoansPageView({
                                 {guarantor.fullName}
                               </p>
                               <p className="mt-1 text-slate-300">
-                                {guarantor.memberNumber ?? "No member number yet"} ·{" "}
+                                {guarantor.memberNumber ?? "Member number pending"} ·{" "}
                                 Liability {formatNaira(guarantor.liabilityAmount)}
                               </p>
                             </div>

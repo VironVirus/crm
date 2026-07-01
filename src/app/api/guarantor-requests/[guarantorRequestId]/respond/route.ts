@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
+import { getMemberTier } from "@/lib/member-tier";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { guarantorRequestIdParamsSchema } from "@/lib/validation/api";
@@ -30,7 +31,13 @@ type ProfileRecord = {
 };
 
 type MemberRecord = {
+  national_id_path: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
   onboarding_status: "pending" | "registered";
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
 };
 
 type LoanGuarantorAcceptedRecord = {
@@ -112,7 +119,9 @@ export async function POST(
       admin.from("profiles").select("status").eq("id", user.id).maybeSingle(),
       admin
         .from("members")
-        .select("onboarding_status")
+        .select(
+          "onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+        )
         .eq("id", user.id)
         .maybeSingle(),
       admin
@@ -149,6 +158,13 @@ export async function POST(
       return jsonError(
         "Only fully registered members can accept guarantor requests.",
         400,
+      );
+    }
+
+    if (getMemberTier(memberRecord) !== "tier_3") {
+      return jsonError(
+        "Complete your profile to Tier 3 before accepting guarantor requests.",
+        403,
       );
     }
 

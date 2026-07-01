@@ -17,26 +17,25 @@ export default function LoginPage({
         <section className="space-y-8">
           <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            Cooperative operations for administrators and members
+            Welcome to Ifemelumma Cooperative Society
           </div>
           <div className="space-y-5">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300">
               Ifemelumma Cooperative Society
             </p>
             <h1 className="max-w-2xl font-['Outfit'] text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              A shared system for savings, governance, and member services.
+              Access your dashboard and stay close to your cooperative life.
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-300">
-              Sign in or create an account to reach the protected admin
-              workspace or the member portal powered by Supabase
-              authentication.
+              Sign in to view your savings, loans, shares, notifications, and
+              society updates from one secure place.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              "Protected admin and member areas",
-              "Supabase SSR session handling",
-              "Tailwind and shadcn-ready component system",
+              "Member and admin access",
+              "Secure account sign in",
+              "Fast access to your records",
             ].map((item) => (
               <div
                 key={item}

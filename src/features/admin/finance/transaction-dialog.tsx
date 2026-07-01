@@ -252,7 +252,7 @@ export function SavingsTransactionDialog({
                     <div>
                       <p className="font-medium text-white">{member.fullName}</p>
                       <p className="text-xs text-slate-400">
-                        {member.memberNumber ?? "No member number yet"} · {member.email}
+                        {member.memberNumber ?? "Member number pending"} · {member.email}
                       </p>
                     </div>
                     <span className="text-xs uppercase tracking-[0.22em] text-emerald-200">
@@ -274,7 +274,7 @@ export function SavingsTransactionDialog({
                 <div>
                   <p className="font-medium text-white">{selectedMember.fullName}</p>
                   <p className="text-sm text-slate-300">
-                    {selectedMember.memberNumber ?? "No member number yet"}
+                    {selectedMember.memberNumber ?? "Member number pending"}
                   </p>
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.22em] text-emerald-200">

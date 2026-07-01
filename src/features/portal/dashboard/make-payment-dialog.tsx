@@ -23,6 +23,7 @@ import {
   type MemberPaymentShareConfig,
   type PaymentType,
 } from "@/lib/payments";
+import { type MemberTier } from "@/lib/member-tier";
 import { formatAccountTypeLabel } from "@/lib/savings";
 import {
   memberPaymentFormSchema,
@@ -66,12 +67,14 @@ export function MakePaymentDialog({
   memberId,
   memberName,
   memberNumber,
+  memberTier,
   shareConfig,
 }: {
   activeLoans: MemberPaymentLoanOption[];
   memberId: string;
   memberName: string;
   memberNumber: string | null;
+  memberTier: MemberTier;
   shareConfig: MemberPaymentShareConfig | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -92,6 +95,7 @@ export function MakePaymentDialog({
   const paymentType = watch("paymentType");
   const amount = Number(watch("amount") ?? 0);
   const selectedLoanId = watch("loanId");
+  const canAccessTierThreePayments = memberTier === "tier_3";
 
   useEffect(() => {
     if (!open) {
@@ -101,6 +105,16 @@ export function MakePaymentDialog({
     reset(defaultValues);
     setServerError(null);
   }, [open, reset]);
+
+  useEffect(() => {
+    if (canAccessTierThreePayments) {
+      return;
+    }
+
+    if (paymentType !== "savings_deposit") {
+      setValue("paymentType", "savings_deposit");
+    }
+  }, [canAccessTierThreePayments, paymentType, setValue]);
 
   useEffect(() => {
     if (
@@ -131,8 +145,16 @@ export function MakePaymentDialog({
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
 
-    if (values.paymentType === "loan_repayment" && activeLoans.length === 0) {
+    if (
+      values.paymentType === "loan_repayment" &&
+      (!canAccessTierThreePayments || activeLoans.length === 0)
+    ) {
       setServerError("You do not have an active loan available for repayment yet.");
+      return;
+    }
+
+    if (values.paymentType === "share_purchase" && !canAccessTierThreePayments) {
+      setServerError("Complete your profile to unlock share payments.");
       return;
     }
 
@@ -186,9 +208,12 @@ export function MakePaymentDialog({
 
   const submitDisabled =
     isSubmitting ||
-    (paymentType === "loan_repayment" && activeLoans.length === 0) ||
+    (paymentType === "loan_repayment" &&
+      (!canAccessTierThreePayments || activeLoans.length === 0)) ||
     (paymentType === "share_purchase" &&
-      (!shareConfig || (amount > 0 && !hasExactShareMultiple)));
+      (!canAccessTierThreePayments ||
+        !shareConfig ||
+        (amount > 0 && !hasExactShareMultiple)));
 
   return (
     <>
@@ -213,6 +238,12 @@ export function MakePaymentDialog({
               <p className="mt-1 text-sm text-slate-200">
                 {memberNumber ?? "Member number pending"} · Secure online payment
               </p>
+              {!canAccessTierThreePayments ? (
+                <p className="mt-2 text-xs text-emerald-100/90">
+                  Savings deposits are available now. Loan repayments and share
+                  purchases unlock at Tier 3.
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -225,12 +256,16 @@ export function MakePaymentDialog({
                 <option className="bg-slate-950 text-white" value="savings_deposit">
                   Savings deposit
                 </option>
-                <option className="bg-slate-950 text-white" value="loan_repayment">
-                  Loan repayment
-                </option>
-                <option className="bg-slate-950 text-white" value="share_purchase">
-                  Share purchase
-                </option>
+                {canAccessTierThreePayments ? (
+                  <option className="bg-slate-950 text-white" value="loan_repayment">
+                    Loan repayment
+                  </option>
+                ) : null}
+                {canAccessTierThreePayments ? (
+                  <option className="bg-slate-950 text-white" value="share_purchase">
+                    Share purchase
+                  </option>
+                ) : null}
               </select>
               <p className="text-xs text-slate-400">
                 {formatPaymentTypeSummary(paymentType)}

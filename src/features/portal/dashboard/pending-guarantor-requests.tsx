@@ -99,7 +99,7 @@ export function PendingGuarantorRequestsPanel({
                 <div>
                   <p className="font-medium text-white">{request.applicantName}</p>
                   <p className="mt-1 text-sm text-slate-300">
-                    {request.applicantMemberNumber ?? "No member number"} ·{" "}
+                    {request.applicantMemberNumber ?? "Member number pending"} ·{" "}
                     {request.loanProductName}
                   </p>
                 </div>

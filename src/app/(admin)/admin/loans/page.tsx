@@ -28,12 +28,12 @@ type MemberRecord = {
   date_of_birth: string;
   address: string;
   occupation: string;
-  next_of_kin_name: string;
-  next_of_kin_phone: string;
-  next_of_kin_relationship: string;
-  national_id_path: string;
-  passport_photo_path: string;
-  utility_bill_path: string;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
+  national_id_path: string | null;
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
 };
 
 type LoanProductRecord = {
@@ -108,6 +108,14 @@ async function createSignedDocumentLinks(
 
   return Promise.all(
     documents.map(async (document) => {
+      if (!document.path) {
+        return {
+          label: document.label,
+          path: null,
+          signedUrl: null,
+        };
+      }
+
       const { data, error } = await admin.storage
         .from(KYC_STORAGE_BUCKET)
         .createSignedUrl(document.path, 60 * 60);

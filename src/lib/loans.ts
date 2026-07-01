@@ -94,7 +94,7 @@ export type MemberLoanApplicationRow = {
 
 export type LoanDocumentLink = {
   label: string;
-  path: string;
+  path: string | null;
   signedUrl: string | null;
 };
 
@@ -134,9 +134,9 @@ export type AdminLoanApplicationRow = {
     address: string;
     occupation: string;
     dateOfBirth: string;
-    nextOfKinName: string;
-    nextOfKinPhone: string;
-    nextOfKinRelationship: string;
+    nextOfKinName: string | null;
+    nextOfKinPhone: string | null;
+    nextOfKinRelationship: string | null;
     savingsBalance: number;
     mandatorySavings: number;
     voluntarySavings: number;

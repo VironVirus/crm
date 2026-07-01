@@ -23,8 +23,8 @@ export const KYC_FIELD_CONFIG = {
 
 export type KycFieldName = keyof typeof KYC_FIELD_CONFIG;
 
-const memberRegistrationBaseShape = {
-  fullName: z.string().trim().min(3, "Enter the member's full name."),
+const registrationShape = {
+  fullName: z.string().trim().min(3, "Enter your full name."),
   email: z
     .string()
     .trim()
@@ -33,19 +33,23 @@ const memberRegistrationBaseShape = {
   phone: z.string().trim().min(7, "Enter a valid phone number."),
   dateOfBirth: z
     .string()
-    .min(1, "Enter the member's date of birth.")
+    .min(1, "Enter your date of birth.")
     .refine((value) => !Number.isNaN(Date.parse(value)), {
       message: "Enter a valid date of birth.",
     })
     .refine((value) => new Date(value) <= new Date(), {
       message: "Date of birth cannot be in the future.",
     }),
-  address: z.string().trim().min(10, "Enter the member's address."),
-  occupation: z.string().trim().min(2, "Enter the member's occupation."),
-  nextOfKinName: z
+  address: z.string().trim().min(10, "Enter your address."),
+  occupation: z.string().trim().min(2, "Enter your occupation."),
+  password: z
     .string()
-    .trim()
-    .min(3, "Enter the next of kin's name."),
+    .min(8, "Password must be at least 8 characters long."),
+  confirmPassword: z.string().min(8, "Confirm your password."),
+};
+
+const nextOfKinShape = {
+  nextOfKinName: z.string().trim().min(3, "Enter your next of kin's name."),
   nextOfKinPhone: z
     .string()
     .trim()
@@ -53,15 +57,11 @@ const memberRegistrationBaseShape = {
   nextOfKinRelationship: z
     .string()
     .trim()
-    .min(2, "Enter the relationship to the next of kin."),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters long."),
-  confirmPassword: z.string().min(8, "Confirm the password."),
+    .min(2, "Enter the relationship to your next of kin."),
 };
 
 function validatePasswordConfirmation(
-  value: Pick<MemberRegistrationTextValues, "password" | "confirmPassword">,
+  value: Pick<MemberRegistrationValues, "password" | "confirmPassword">,
   ctx: z.RefinementCtx,
 ) {
   if (value.password !== value.confirmPassword) {
@@ -111,69 +111,25 @@ function createFileSchema(fieldName: KycFieldName) {
   });
 }
 
-export const memberRegistrationTextSchema = z
-  .object(memberRegistrationBaseShape)
+export const memberRegistrationSchema = z
+  .object(registrationShape)
   .superRefine(validatePasswordConfirmation);
 
-export const memberRegistrationFormSchema = z
-  .object({
-    ...memberRegistrationBaseShape,
-    nationalId: createFileSchema("nationalId"),
-    passportPhoto: createFileSchema("passportPhoto"),
-    utilityBill: createFileSchema("utilityBill"),
-  })
-  .superRefine(validatePasswordConfirmation);
+export const memberNextOfKinSchema = z.object(nextOfKinShape);
 
-export type MemberRegistrationTextValues = z.infer<
-  typeof memberRegistrationTextSchema
->;
+export const memberKycSchema = z.object({
+  nationalId: createFileSchema("nationalId"),
+  passportPhoto: createFileSchema("passportPhoto"),
+  utilityBill: createFileSchema("utilityBill"),
+});
 
-export type MemberRegistrationFormValues = MemberRegistrationTextValues & {
+export type MemberRegistrationValues = z.infer<typeof memberRegistrationSchema>;
+export type MemberNextOfKinValues = z.infer<typeof memberNextOfKinSchema>;
+export type MemberKycValues = {
   nationalId: File | null;
   passportPhoto: File | null;
   utilityBill: File | null;
 };
-
-export const MEMBER_REGISTRATION_STEPS = [
-  {
-    title: "Personal Info",
-    description: "Basic member identity and account access details.",
-  },
-  {
-    title: "Next of Kin",
-    description: "Emergency and family contact information.",
-  },
-  {
-    title: "KYC Upload",
-    description: "Upload the supporting identity and proof-of-address files.",
-  },
-  {
-    title: "Review & Submit",
-    description: "Confirm every detail before the account is created.",
-  },
-] as const;
-
-export const MEMBER_REGISTRATION_STEP_FIELDS = [
-  [
-    "fullName",
-    "email",
-    "phone",
-    "dateOfBirth",
-    "address",
-    "occupation",
-    "password",
-    "confirmPassword",
-  ],
-  ["nextOfKinName", "nextOfKinPhone", "nextOfKinRelationship"],
-  ["nationalId", "passportPhoto", "utilityBill"],
-  [],
-] as const;
-
-export function getStepIndexForField(fieldName: string) {
-  return MEMBER_REGISTRATION_STEP_FIELDS.findIndex((fields) =>
-    (fields as readonly string[]).includes(fieldName),
-  );
-}
 
 export function sanitizeStorageFilename(filename: string) {
   return filename

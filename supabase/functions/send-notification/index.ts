@@ -99,7 +99,7 @@ function buildEmailHtml({
             </a>
           </div>
           <p style="margin:24px 0 0;font-size:13px;line-height:1.8;color:#94a3b8;">
-            Stay close to your savings, loans, dividends, and member responsibilities from your secure cooperative workspace.
+            Stay close to your savings, loans, dividends, and member responsibilities from your secure cooperative dashboard.
           </p>
         </div>
       </div>

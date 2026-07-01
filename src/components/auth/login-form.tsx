@@ -77,12 +77,11 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           </Button>
         </div>
         <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
-          Access your workspace
+          Access your dashboard
         </CardTitle>
         <p className="text-sm leading-6 text-slate-300">
-          Sign in with a registered member or administrator account. New member
-          onboarding now runs through the structured registration flow so that
-          profiles, KYC documents, and member numbers stay aligned.
+          Sign in with your registered member or administrator account to manage
+          your cooperative activity in one place.
         </p>
       </CardHeader>
       <CardContent>
@@ -136,7 +135,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-slate-300">
             Need a new member account?{" "}
             <Link className="font-medium text-emerald-200 hover:text-emerald-100" href="/register">
-              Open the member registration flow
+              Create your account
             </Link>
             .
           </div>
