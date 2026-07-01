@@ -1,0 +1,266 @@
+.governancePage {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.titleArea {
+  margin-bottom: 32px;
+}
+
+.titleArea h2 {
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.titleArea p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Meeting Panel */
+.meetingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.meetingCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.dateWidget {
+  width: 64px;
+  height: 72px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dateMonth {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dateDay {
+  font-size: 1.6rem;
+  font-family: var(--font-family-display);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: -2px;
+}
+
+.meetingDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.meetingTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.meetingMeta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Resolution panel */
+.resolutionsSection {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sectionHeader {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+.resGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .resGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resCard {
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transition: all var(--transition-fast);
+}
+
+.resCard:hover {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.resHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.resTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-right: 12px;
+}
+
+.resMeta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.resBody {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  flex: 1;
+}
+
+/* Voting progress meters */
+.voteProgressPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.voteRow {
+  display: flex;
+  flex-direction: column;
+}
+
+.voteLabelRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.voteBar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.voteFillYes {
+  height: 100%;
+  background: var(--success);
+  border-radius: 30px;
+  transition: width 0.5s ease;
+}
+
+.voteFillNo {
+  height: 100%;
+  background: var(--danger);
+  border-radius: 30px;
+  transition: width 0.5s ease;
+}
+
+.voteFillAbstain {
+  height: 100%;
+  background: var(--text-muted);
+  border-radius: 30px;
+  transition: width 0.5s ease;
+}
+
+/* Interactive casting keys */
+.castVoteRow {
+  display: flex;
+  gap: 12px;
+}
+
+.voteBtn {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.voteBtnYes:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.voteBtnNo:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.votedIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 8px;
+  background: var(--primary-glow);
+  border: 1px dashed var(--primary);
+  border-radius: var(--border-radius-sm);
+  text-align: center;
+}
