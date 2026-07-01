@@ -40,6 +40,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/theme/theme-provider";
 import {
   Card,
   CardContent,
@@ -119,7 +120,7 @@ function DashboardKpiCard({
       className={
         danger
           ? "border-rose-400/25 bg-rose-500/15"
-          : "border-white/15 bg-[#111827]"
+          : "border-border bg-card"
       }
     >
       <CardHeader className="space-y-4">
@@ -138,11 +139,11 @@ function DashboardKpiCard({
           </div>
         </div>
         <div className="space-y-2">
-          <CardTitle className="font-['Outfit'] text-3xl text-white">
+          <CardTitle className="font-['Outfit'] text-3xl text-foreground">
             {value}
           </CardTitle>
           <CardDescription
-            className={danger ? "text-rose-100/85" : "text-slate-200"}
+            className={danger ? "text-rose-100/85" : "text-muted-foreground"}
           >
             {description}
           </CardDescription>
@@ -164,6 +165,17 @@ export default function AdminDashboardPageView({
   const [isRefreshingActivity, setIsRefreshingActivity] = useState(false);
   const [activityError, setActivityError] = useState<string | null>(null);
   const supabaseRef = useRef(createBrowserSupabaseClient());
+  const { resolvedTheme } = useTheme();
+  const chartGrid = resolvedTheme === "dark"
+    ? "rgba(255,255,255,0.12)"
+    : "rgba(15,23,42,0.12)";
+  const chartTick = resolvedTheme === "dark" ? "#cbd5e1" : "#475569";
+  const tooltipBackground =
+    resolvedTheme === "dark" ? "rgba(17, 24, 39, 0.98)" : "#ffffff";
+  const tooltipBorder =
+    resolvedTheme === "dark"
+      ? "1px solid rgba(255,255,255,0.16)"
+      : "1px solid rgba(15,23,42,0.12)";
 
   useEffect(() => {
     setRecentActivity(initialRecentActivity);
@@ -250,18 +262,13 @@ export default function AdminDashboardPageView({
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-[32px] border border-white/15 bg-[#111827] p-6 shadow-2xl shadow-black/30 lg:flex-row lg:items-end lg:justify-between">
+      <section className="flex flex-col gap-4 rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl space-y-3">
           <Badge className="w-fit">Admin Overview</Badge>
           <div className="space-y-2">
-            <h2 className="font-['Outfit'] text-3xl font-semibold text-white">
+            <h2 className="font-['Outfit'] text-3xl font-semibold text-foreground">
               Cooperative performance at a glance
             </h2>
-            <p className="max-w-2xl text-sm leading-6 text-slate-200">
-              Track member strength, capital movement, lending exposure, and live
-              transactions from one command center built for Ifemelumma
-              Cooperative Society.
-            </p>
           </div>
         </div>
 
@@ -270,22 +277,22 @@ export default function AdminDashboardPageView({
             <p className="text-xs uppercase tracking-[0.28em] text-amber-200">
               Pending loan reviews
             </p>
-            <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-white">
+            <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-foreground">
               {kpis.pendingLoanReviewCount}
             </p>
-            <p className="mt-1 text-sm text-slate-200">
-              Applications still waiting for admin action
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pending applications
             </p>
           </div>
           <div className="rounded-[28px] border border-emerald-400/25 bg-emerald-500/15 px-5 py-4">
             <p className="text-xs uppercase tracking-[0.28em] text-emerald-200">
               Collections this month
             </p>
-            <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-white">
+            <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-foreground">
               {formatDashboardNaira(kpis.collectionsThisMonth)}
             </p>
-            <p className="mt-1 text-sm text-slate-200">
-              Savings, repayments, and share purchases combined
+            <p className="mt-1 text-sm text-muted-foreground">
+              Savings, repayments, and shares
             </p>
           </div>
         </div>
@@ -299,31 +306,31 @@ export default function AdminDashboardPageView({
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <DashboardKpiCard
-          description="Registered members currently marked active."
+          description="Active members"
           icon={Users}
           label="Total active members"
           value={kpis.totalActiveMembers.toLocaleString("en-NG")}
         />
         <DashboardKpiCard
-          description="Combined balance across every savings account."
+          description="Savings balance"
           icon={PiggyBank}
           label="Total savings balance"
           value={formatDashboardNaira(kpis.totalSavingsBalance)}
         />
         <DashboardKpiCard
-          description="Outstanding principal still sitting in the loan book."
+          description="Outstanding balance"
           icon={Landmark}
           label="Total loans outstanding"
           value={formatDashboardNaira(kpis.totalLoansOutstanding)}
         />
         <DashboardKpiCard
-          description="Current value of issued member share holdings."
+          description="Share capital"
           icon={Coins}
           label="Total share capital"
           value={formatDashboardNaira(kpis.totalSharesCapital)}
         />
         <DashboardKpiCard
-          description="Cash collected during the current month."
+          description="Monthly collections"
           icon={Wallet}
           label="Collections this month"
           value={formatDashboardNaira(kpis.collectionsThisMonth)}
@@ -332,7 +339,7 @@ export default function AdminDashboardPageView({
           accent={kpis.overdueLoansCount > 0 ? "danger" : "default"}
           description={
             kpis.overdueLoansCount > 0
-              ? "Loans with at least one overdue installment need attention."
+              ? "Needs attention"
               : "No overdue loans are currently flagged."
           }
           icon={AlertTriangle}
@@ -342,35 +349,27 @@ export default function AdminDashboardPageView({
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <Badge className="w-fit">Capital Flow</Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               Monthly savings vs loan disbursements
             </CardTitle>
-            <CardDescription className="text-slate-200">
-              Compare how much the cooperative gathered in savings deposits
-              against how much it released into the loan portfolio over the last
-              twelve months.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[340px]">
               <ResponsiveContainer height="100%" width="100%">
                 <BarChart data={monthlySavingsVsLoanDisbursements}>
-                  <CartesianGrid
-                    stroke="rgba(255,255,255,0.12)"
-                    vertical={false}
-                  />
+                  <CartesianGrid stroke={chartGrid} vertical={false} />
                   <XAxis
                     axisLine={false}
                     dataKey="label"
-                    tick={{ fill: "#cbd5e1", fontSize: 12 }}
+                    tick={{ fill: chartTick, fontSize: 12 }}
                     tickLine={false}
                   />
                   <YAxis
                     axisLine={false}
-                    tick={{ fill: "#cbd5e1", fontSize: 12 }}
+                    tick={{ fill: chartTick, fontSize: 12 }}
                     tickFormatter={(value) =>
                       formatDashboardCompactNaira(Number(value))
                     }
@@ -379,14 +378,15 @@ export default function AdminDashboardPageView({
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "rgba(17, 24, 39, 0.98)",
-                      border: "1px solid rgba(255,255,255,0.16)",
+                      background: tooltipBackground,
+                      border: tooltipBorder,
                       borderRadius: "18px",
+                      color: chartTick,
                     }}
                     formatter={(value) =>
                       formatDashboardNaira(Number(value))
                     }
-                    labelStyle={{ color: "#cbd5e1" }}
+                    labelStyle={{ color: chartTick }}
                   />
                   <Legend />
                   <Bar
@@ -408,18 +408,18 @@ export default function AdminDashboardPageView({
         </Card>
 
         <div className="grid gap-4">
-          <Card className="border-white/15 bg-[#111827]">
+          <Card>
             <CardHeader>
               <Badge className="w-fit" variant="secondary">
                 Loan Mix
               </Badge>
-              <CardTitle className="font-['Outfit'] text-2xl text-white">
+              <CardTitle className="font-['Outfit'] text-2xl text-foreground">
                 Loan status distribution
               </CardTitle>
-              <CardDescription className="text-slate-200">
+              <CardDescription className="text-muted-foreground">
                 {totalLoansTracked > 0
-                  ? `${totalLoansTracked} loans are currently tracked across active, completed, and defaulted states.`
-                  : "Loan status segments will appear here once disbursements start."}
+                  ? `${totalLoansTracked} loans tracked`
+                  : "No loans tracked yet."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -446,9 +446,10 @@ export default function AdminDashboardPageView({
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          background: "rgba(17, 24, 39, 0.98)",
-                          border: "1px solid rgba(255,255,255,0.16)",
+                          background: tooltipBackground,
+                          border: tooltipBorder,
                           borderRadius: "18px",
+                          color: chartTick,
                         }}
                         formatter={(value) =>
                           `${Number(value ?? 0)} loan${Number(value ?? 0) === 1 ? "" : "s"}`
@@ -458,8 +459,8 @@ export default function AdminDashboardPageView({
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/15 bg-slate-900/80 px-4 py-10 text-center text-sm text-slate-200">
-                  No loan records are available yet.
+                <div className="rounded-3xl border border-dashed border-border bg-secondary px-4 py-10 text-center text-sm text-muted-foreground">
+                  No loan records yet.
                 </div>
               )}
 
@@ -467,31 +468,31 @@ export default function AdminDashboardPageView({
                 {loanStatusDistribution.map((point) => (
                   <div
                     key={point.status}
-                    className="flex items-center justify-between rounded-2xl border border-white/15 bg-slate-900/80 px-4 py-3"
+                    className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
                       <span
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: point.color }}
                       />
-                      <span className="text-sm text-slate-200">{point.label}</span>
+                      <span className="text-sm text-muted-foreground">{point.label}</span>
                     </div>
-                    <span className="font-medium text-white">{point.value}</span>
+                    <span className="font-medium text-foreground">{point.value}</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-white/15 bg-[#111827]">
+          <Card>
             <CardHeader>
               <Badge className="w-fit" variant="outline">
                 Member Growth
               </Badge>
-              <CardTitle className="font-['Outfit'] text-2xl text-white">
+              <CardTitle className="font-['Outfit'] text-2xl text-foreground">
                 Members joined per month
               </CardTitle>
-              <CardDescription className="text-slate-200">
+              <CardDescription className="text-muted-foreground">
                 {joinedMembersLastTwelveMonths.toLocaleString("en-NG")} new
                 registered member
                 {joinedMembersLastTwelveMonths === 1 ? "" : "s"} in the last
@@ -502,33 +503,31 @@ export default function AdminDashboardPageView({
               <div className="h-[260px]">
                 <ResponsiveContainer height="100%" width="100%">
                   <LineChart data={memberGrowth}>
-                    <CartesianGrid
-                      stroke="rgba(255,255,255,0.12)"
-                      vertical={false}
-                    />
+                    <CartesianGrid stroke={chartGrid} vertical={false} />
                     <XAxis
                       axisLine={false}
                       dataKey="label"
-                      tick={{ fill: "#cbd5e1", fontSize: 12 }}
+                      tick={{ fill: chartTick, fontSize: 12 }}
                       tickLine={false}
                     />
                     <YAxis
                       allowDecimals={false}
                       axisLine={false}
-                      tick={{ fill: "#cbd5e1", fontSize: 12 }}
+                      tick={{ fill: chartTick, fontSize: 12 }}
                       tickLine={false}
                       width={52}
                     />
                     <Tooltip
                       contentStyle={{
-                        background: "rgba(17, 24, 39, 0.98)",
-                        border: "1px solid rgba(255,255,255,0.16)",
+                        background: tooltipBackground,
+                        border: tooltipBorder,
                         borderRadius: "18px",
+                        color: chartTick,
                       }}
                       formatter={(value) =>
                         `${Number(value ?? 0)} joined`
                       }
-                      labelStyle={{ color: "#cbd5e1" }}
+                      labelStyle={{ color: chartTick }}
                     />
                     <Line
                       activeDot={{ r: 6 }}
@@ -547,19 +546,18 @@ export default function AdminDashboardPageView({
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div>
               <Badge className="w-fit">Live Feed</Badge>
-              <CardTitle className="mt-3 font-['Outfit'] text-2xl text-white">
+              <CardTitle className="mt-3 font-['Outfit'] text-2xl text-foreground">
                 Recent activity
               </CardTitle>
-              <CardDescription className="text-slate-200">
-                Last 10 transactions across savings, loans, and shares. New
-                entries appear automatically.
+              <CardDescription className="text-muted-foreground">
+                Last 10 transactions
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-200">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {isRefreshingActivity ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -587,7 +585,7 @@ export default function AdminDashboardPageView({
                 return (
                   <div
                     key={item.id}
-                    className="rounded-[28px] border border-white/15 bg-slate-900/80 p-4"
+                    className="rounded-[28px] border border-border bg-secondary p-4"
                   >
                     <div className="flex items-start gap-4">
                       <div
@@ -601,8 +599,8 @@ export default function AdminDashboardPageView({
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div className="min-w-0">
-                            <p className="font-medium text-white">{item.title}</p>
-                            <p className="text-sm text-slate-200">
+                            <p className="font-medium text-foreground">{item.title}</p>
+                            <p className="text-sm text-muted-foreground">
                               {item.memberName}
                               {item.memberNumber ? ` · ${item.memberNumber}` : ""}
                             </p>
@@ -617,14 +615,14 @@ export default function AdminDashboardPageView({
                             >
                               {formatSignedAmount(item.amount)}
                             </p>
-                            <p className="text-xs text-slate-300">
+                            <p className="text-xs text-muted-foreground">
                               {formatDashboardRelativeTime(item.happenedAt)}
                             </p>
                           </div>
                         </div>
 
-                        <p className="text-sm text-slate-300">{item.detail}</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-sm text-muted-foreground">{item.detail}</p>
+                        <p className="text-xs text-muted-foreground">
                           {formatDashboardDateTime(item.happenedAt)}
                         </p>
                       </div>
@@ -633,31 +631,26 @@ export default function AdminDashboardPageView({
                 );
               })
             ) : (
-              <div className="rounded-3xl border border-dashed border-white/15 bg-slate-900/80 px-4 py-10 text-center text-sm text-slate-200">
-                Activity will appear here once savings, loan, or share
-                transactions start flowing in.
+              <div className="rounded-3xl border border-dashed border-border bg-secondary px-4 py-10 text-center text-sm text-muted-foreground">
+                No recent activity yet.
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <Badge className="w-fit" variant="secondary">
               Quick Actions
             </Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
-              Move straight into the next admin task
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+              Quick actions
             </CardTitle>
-            <CardDescription className="text-slate-200">
-              Shortcuts to the most common cooperative operations your team needs
-              during the workday.
-            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <Button
               asChild
-              className="h-auto justify-start rounded-[28px] border border-white/15 bg-slate-900/90 px-5 py-4 text-left text-white hover:bg-slate-800"
+              className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
               variant="secondary"
             >
               <Link href="/register">
@@ -668,10 +661,6 @@ export default function AdminDashboardPageView({
                     </div>
                     <div>
                       <p className="font-medium">Register New Member</p>
-                      <p className="mt-1 text-sm text-slate-200">
-                        Open the member onboarding form and start a new
-                        registration.
-                      </p>
                     </div>
                   </div>
                   <ArrowUpRight className="mt-1 h-4 w-4 shrink-0" />
@@ -681,7 +670,7 @@ export default function AdminDashboardPageView({
 
             <Button
               asChild
-              className="h-auto justify-start rounded-[28px] border border-white/15 bg-slate-900/90 px-5 py-4 text-left text-white hover:bg-slate-800"
+              className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
               variant="secondary"
             >
               <Link href="/admin/finance">
@@ -692,10 +681,6 @@ export default function AdminDashboardPageView({
                     </div>
                     <div>
                       <p className="font-medium">Record Payment</p>
-                      <p className="mt-1 text-sm text-slate-200">
-                        Post deposits and withdrawals against member savings
-                        accounts.
-                      </p>
                     </div>
                   </div>
                   <ArrowUpRight className="mt-1 h-4 w-4 shrink-0" />
@@ -705,7 +690,7 @@ export default function AdminDashboardPageView({
 
             <Button
               asChild
-              className="h-auto justify-start rounded-[28px] border border-white/15 bg-slate-900/90 px-5 py-4 text-left text-white hover:bg-slate-800"
+              className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
               variant="secondary"
             >
               <Link href="/admin/loans">
@@ -723,10 +708,6 @@ export default function AdminDashboardPageView({
                           </Badge>
                         ) : null}
                       </div>
-                      <p className="mt-1 text-sm text-slate-200">
-                        Open the loan processing board and move applications
-                        forward.
-                      </p>
                     </div>
                   </div>
                   <ArrowUpRight className="mt-1 h-4 w-4 shrink-0" />
@@ -736,7 +717,7 @@ export default function AdminDashboardPageView({
 
             <Button
               asChild
-              className="h-auto justify-start rounded-[28px] border border-white/15 bg-slate-900/90 px-5 py-4 text-left text-white hover:bg-slate-800"
+              className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
               variant="secondary"
             >
               <Link href="/admin/shares">
@@ -747,10 +728,6 @@ export default function AdminDashboardPageView({
                     </div>
                     <div>
                       <p className="font-medium">Declare Dividend</p>
-                      <p className="mt-1 text-sm text-slate-200">
-                        Head to share capital management and prepare a dividend
-                        declaration.
-                      </p>
                     </div>
                   </div>
                   <ArrowUpRight className="mt-1 h-4 w-4 shrink-0" />

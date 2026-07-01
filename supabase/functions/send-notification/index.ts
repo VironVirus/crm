@@ -60,7 +60,7 @@ function buildSmsMessage({
   title: string;
 }) {
   return [
-    `Ifemelumma Cooperative Society: ${title}.`,
+    `Ifemelunma Cooperative Society: ${title}.`,
     message,
     `Open your portal: ${actionUrl}`,
   ].join(" ");
@@ -82,7 +82,7 @@ function buildEmailHtml({
       <div style="margin:0 auto;max-width:640px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);border-radius:28px;background:linear-gradient(180deg,#0d1a2b 0%,#0a1220 100%);box-shadow:0 24px 60px rgba(0,0,0,0.28);">
         <div style="padding:32px;background:radial-gradient(circle at top right, rgba(16,185,129,0.22), transparent 38%), linear-gradient(135deg, rgba(245,158,11,0.16), rgba(16,185,129,0.08));border-bottom:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;padding:8px 12px;border-radius:999px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2);font-size:11px;letter-spacing:0.24em;text-transform:uppercase;color:#fde68a;">
-            Ifemelumma Cooperative Society
+            Ifemelunma Cooperative Society
           </div>
           <h1 style="margin:18px 0 8px;font-size:28px;line-height:1.2;color:#ffffff;">${title}</h1>
           <p style="margin:0;font-size:15px;line-height:1.8;color:#cbd5e1;">
@@ -342,7 +342,7 @@ Deno.serve(async (request) => {
   const actionUrl = buildActionUrl(Deno.env.get("APP_URL"), payload.actionUrl);
   const emailSubject =
     payload.emailSubject?.trim() ||
-    `${title} - Ifemelumma Cooperative Society`;
+    `${title} - Ifemelunma Cooperative Society`;
   const smsMessage = buildSmsMessage({
     actionUrl,
     message,

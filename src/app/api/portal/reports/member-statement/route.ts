@@ -377,7 +377,7 @@ export async function GET(request: NextRequest) {
       }) as React.ReactElement<DocumentProps>,
     );
     const filename = [
-      "ifemelumma-member-statement",
+      "ifemelunma-member-statement",
       sanitizeFilenamePart(statement.member.memberNumber ?? statement.member.fullName),
       parsedQuery.data.start_date,
       parsedQuery.data.end_date,

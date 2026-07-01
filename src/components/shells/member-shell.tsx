@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { NotificationBell } from "@/components/portal/notification-bell";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getMemberTierMeta, type MemberTier } from "@/lib/member-tier";
 
 type MemberShellProps = {
@@ -83,7 +84,7 @@ function NavigationLink({
 }) {
   if (isLocked) {
     return (
-      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-3">
           <Icon className="h-4 w-4" />
           <span>{label}</span>
@@ -99,8 +100,8 @@ function NavigationLink({
     <Link
       className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
         isActive
-          ? "bg-emerald-500/15 text-emerald-100"
-          : "text-slate-200 hover:bg-white/[0.06] hover:text-white"
+          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
+          : "text-foreground hover:bg-secondary"
       }`}
       href={href}
       onClick={onClick}
@@ -154,17 +155,17 @@ export default function MemberShell({
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.18),_transparent_30%),linear-gradient(180deg,_#05070c,_#0b1220)] text-white">
-      <div className="mx-auto min-h-screen max-w-6xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-        <header className="sticky top-4 z-30 mb-6 rounded-[30px] border border-white/15 bg-[#111827]/95 px-5 py-4 shadow-2xl shadow-black/30 backdrop-blur">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.12),_transparent_32%),linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)))] text-foreground">
+      <div className="mx-auto min-h-screen max-w-6xl px-3 pb-28 pt-3 sm:px-6 sm:pt-4 lg:px-8">
+        <header className="sticky top-3 z-30 mb-5 rounded-[24px] border border-border bg-card/95 px-4 py-4 shadow-xl shadow-black/10 backdrop-blur dark:shadow-black/30 sm:top-4 sm:rounded-[30px] sm:px-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-amber-300 text-slate-950 shadow-lg">
                 <Building2 className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-['Outfit'] text-lg font-semibold text-white">
-                  Ifemelumma Cooperative Society
+                <p className="font-['Outfit'] text-base font-semibold text-foreground sm:text-lg">
+                  Ifemelunma Cooperative Society
                 </p>
                 <p className="text-xs uppercase tracking-[0.24em] text-amber-300">
                   {tierMeta.label} · {tierMeta.medal}
@@ -174,8 +175,9 @@ export default function MemberShell({
 
             <div className="flex items-center gap-2">
               <NotificationBell userId={userId} />
+              <ThemeToggle className="hidden sm:flex" />
               <button
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground transition hover:bg-muted"
                 onClick={() => setMenuOpen(true)}
                 type="button"
               >
@@ -184,21 +186,23 @@ export default function MemberShell({
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 rounded-[26px] border border-white/10 bg-slate-950/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex flex-col gap-3 rounded-[22px] border border-border bg-background/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:rounded-[26px]">
             <div>
-              <p className="font-medium text-white">{memberName}</p>
-              <p className="mt-1 text-sm text-slate-300">
+              <p className="font-medium text-foreground">{memberName}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {memberNumber ?? "Member number pending"}
               </p>
             </div>
-            <div className="max-w-xl text-sm text-slate-200">{tierMeta.nextStep}</div>
+            <div className="max-w-xl text-sm text-muted-foreground">
+              {tierMeta.nextStep}
+            </div>
           </div>
         </header>
 
         <main>{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#08111d]/95 px-3 py-3 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-2 py-2 backdrop-blur sm:px-3 sm:py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
           {primaryItems.map((item) => {
             const Icon = item.icon;
@@ -209,8 +213,8 @@ export default function MemberShell({
                 key={item.href}
                 className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
                   active
-                    ? "bg-emerald-500/15 text-emerald-100"
-                    : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
                 href={item.href}
               >
@@ -223,8 +227,8 @@ export default function MemberShell({
           <button
             className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
               pathname.startsWith("/portal/loans") || pathname.startsWith("/portal/governance")
-                ? "bg-emerald-500/15 text-emerald-100"
-                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}
             onClick={() => setMenuOpen(true)}
             type="button"
@@ -236,22 +240,22 @@ export default function MemberShell({
       </nav>
 
       {menuOpen ? (
-        <div className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm">
-          <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-white/10 bg-[#0b1220] p-5 shadow-2xl shadow-black/60">
+        <div className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm">
+          <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-border bg-card p-5 text-card-foreground shadow-2xl shadow-black/20 dark:shadow-black/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-100">
                   {initials}
                 </div>
                 <div>
-                  <p className="font-medium text-white">{memberName}</p>
-                  <p className="text-sm text-slate-300">
+                  <p className="font-medium text-foreground">{memberName}</p>
+                  <p className="text-sm text-muted-foreground">
                     {memberNumber ?? "Member number pending"}
                   </p>
                 </div>
               </div>
               <button
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground"
                 onClick={() => setMenuOpen(false)}
                 type="button"
               >
@@ -259,7 +263,7 @@ export default function MemberShell({
               </button>
             </div>
 
-            <div className="mt-5 rounded-[26px] border border-emerald-400/15 bg-emerald-500/10 px-4 py-4 text-sm text-slate-100">
+            <div className="mt-5 rounded-[26px] border border-emerald-400/15 bg-emerald-500/10 px-4 py-4 text-sm text-foreground">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-emerald-200">
                 <ShieldCheck className="h-4 w-4" />
                 {tierMeta.label}
@@ -270,7 +274,7 @@ export default function MemberShell({
             <div className="mt-6 space-y-6">
               {groupedItems.map((group) => (
                 <div key={group.title} className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                     {group.title}
                   </p>
                   <div className="space-y-2">
@@ -288,9 +292,13 @@ export default function MemberShell({
               ))}
             </div>
 
+            <div className="mt-6 flex justify-end">
+              <ThemeToggle />
+            </div>
+
             <div className="mt-8">
               <SignOutButton
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted"
                 label="Sign out"
               />
             </div>

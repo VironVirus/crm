@@ -7,7 +7,6 @@ import {
   BellRing,
   CalendarClock,
   Download,
-  FileText,
   Landmark,
   Loader2,
   PiggyBank,
@@ -26,6 +25,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/theme/theme-provider";
 import {
   Card,
   CardContent,
@@ -117,10 +117,10 @@ function SummaryCard({
       className={
         danger
           ? "border-rose-400/25 bg-rose-500/15"
-          : "border-white/15 bg-[#111827]"
+          : ""
       }
     >
-      <CardHeader className="space-y-4">
+      <CardHeader className="space-y-4 p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <Badge className="w-fit" variant={danger ? "outline" : "secondary"}>
             {label}
@@ -136,11 +136,11 @@ function SummaryCard({
           </div>
         </div>
         <div className="space-y-2">
-          <CardTitle className="font-['Outfit'] text-3xl text-white">
+          <CardTitle className="font-['Outfit'] text-2xl text-foreground sm:text-3xl">
             {value}
           </CardTitle>
           <CardDescription
-            className={danger ? "text-rose-100/85" : "text-slate-200"}
+            className={danger ? "text-rose-700 dark:text-rose-100/85" : ""}
           >
             {description}
           </CardDescription>
@@ -169,6 +169,17 @@ export default function MemberDashboardPageView({
   const [statementError, setStatementError] = useState<string | null>(null);
   const [isGeneratingStatement, setIsGeneratingStatement] = useState(false);
   const tierMeta = getMemberTierMeta(memberTier);
+  const { resolvedTheme } = useTheme();
+  const chartGrid = resolvedTheme === "dark"
+    ? "rgba(255,255,255,0.12)"
+    : "rgba(15,23,42,0.12)";
+  const chartTick = resolvedTheme === "dark" ? "#cbd5e1" : "#475569";
+  const tooltipBackground =
+    resolvedTheme === "dark" ? "rgba(17, 24, 39, 0.98)" : "#ffffff";
+  const tooltipBorder =
+    resolvedTheme === "dark"
+      ? "1px solid rgba(255,255,255,0.16)"
+      : "1px solid rgba(15,23,42,0.12)";
 
   async function handleStatementDownload() {
     setStatementError(null);
@@ -191,7 +202,7 @@ export default function MemberDashboardPageView({
         response.headers
           .get("content-disposition")
           ?.match(/filename="([^"]+)"/)?.[1] ??
-        `ifemelumma-member-statement-${new Date().toISOString().slice(0, 10)}.pdf`;
+        `ifemelunma-member-statement-${new Date().toISOString().slice(0, 10)}.pdf`;
       const blob = await response.blob();
 
       downloadBlob(blob, filename);
@@ -220,19 +231,18 @@ export default function MemberDashboardPageView({
         </div>
       ) : null}
 
-      <section className="rounded-[28px] border border-white/15 bg-[#111827] px-5 py-5 shadow-xl shadow-black/30">
+      <section className="rounded-[24px] border border-border bg-card px-4 py-5 shadow-xl shadow-black/10 dark:shadow-black/30 sm:rounded-[28px] sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
             <Badge className="w-fit">{tierMeta.label}</Badge>
-            <h2 className="font-['Outfit'] text-3xl font-semibold text-white">
+            <h2 className="font-['Outfit'] text-3xl font-semibold text-foreground">
               Welcome, {memberName}
             </h2>
-            <p className="text-sm text-slate-200">
+            <p className="text-sm text-muted-foreground">
               {memberNumber ?? "Member number pending"}
             </p>
-            <p className="text-sm text-slate-300">{tierMeta.description}</p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap">
             <MakePaymentDialog
               activeLoans={paymentLoanOptions}
               memberId={memberId}
@@ -270,16 +280,16 @@ export default function MemberDashboardPageView({
       </section>
 
       {memberTier !== "tier_3" ? (
-        <section className="rounded-[28px] border border-amber-300/20 bg-amber-400/10 px-5 py-5 shadow-xl shadow-black/20">
+        <section className="rounded-[24px] border border-amber-300/20 bg-amber-400/10 px-4 py-5 shadow-xl shadow-black/10 dark:shadow-black/20 sm:rounded-[28px] sm:px-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-amber-200">
+              <p className="text-xs uppercase tracking-[0.24em] text-amber-700 dark:text-amber-200">
                 Membership progress
               </p>
-              <h3 className="font-['Outfit'] text-2xl font-semibold text-white">
+              <h3 className="font-['Outfit'] text-2xl font-semibold text-foreground">
                 {tierMeta.nextStep}
               </h3>
-              <p className="text-sm text-amber-100/90">
+              <p className="text-sm text-amber-800 dark:text-amber-100/90">
                 Next of kin completed: {profileCompletion.nextOfKinComplete ? "Yes" : "No"}.
                 KYC completed: {profileCompletion.kycComplete ? "Yes" : "No"}.
               </p>
@@ -338,10 +348,10 @@ export default function MemberDashboardPageView({
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <Badge className="w-fit">Savings Trend</Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               Savings balance over 12 months
             </CardTitle>
           </CardHeader>
@@ -349,28 +359,29 @@ export default function MemberDashboardPageView({
             <div className="h-[320px]">
               <ResponsiveContainer height="100%" width="100%">
                 <LineChart data={savingsTrend}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.12)" vertical={false} />
+                  <CartesianGrid stroke={chartGrid} vertical={false} />
                   <XAxis
                     axisLine={false}
                     dataKey="label"
-                    tick={{ fill: "#cbd5e1", fontSize: 12 }}
+                    tick={{ fill: chartTick, fontSize: 12 }}
                     tickLine={false}
                   />
                   <YAxis
                     axisLine={false}
-                    tick={{ fill: "#cbd5e1", fontSize: 12 }}
+                    tick={{ fill: chartTick, fontSize: 12 }}
                     tickFormatter={(value) => formatCompactNaira(Number(value))}
                     tickLine={false}
                     width={92}
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "rgba(17, 24, 39, 0.98)",
-                      border: "1px solid rgba(255,255,255,0.16)",
+                      background: tooltipBackground,
+                      border: tooltipBorder,
                       borderRadius: "18px",
+                      color: chartTick,
                     }}
                     formatter={(value) => formatNaira(Number(value))}
-                    labelStyle={{ color: "#e2e8f0" }}
+                    labelStyle={{ color: chartTick }}
                   />
                   <Line
                     activeDot={{ r: 6 }}
@@ -386,15 +397,15 @@ export default function MemberDashboardPageView({
           </CardContent>
         </Card>
 
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <Badge className="w-fit" variant="secondary">
               Loan Progress
             </Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               Repayment progress
             </CardTitle>
-            <CardDescription className="text-slate-200">
+            <CardDescription>
               {activeLoan?.productName ?? "No active loan currently selected."}
             </CardDescription>
           </CardHeader>
@@ -402,14 +413,14 @@ export default function MemberDashboardPageView({
             {activeLoan ? (
               <>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm text-slate-200">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>{activeLoan.progressPercent}% repaid</span>
                     <span>
                       {formatNaira(activeLoan.totalRepaid)} of{" "}
                       {formatNaira(activeLoan.totalRepayable)}
                     </span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-3 overflow-hidden rounded-full bg-muted">
                     <div
                       className="h-full rounded-full bg-emerald-400"
                       style={{ width: `${activeLoan.progressPercent}%` }}
@@ -417,7 +428,7 @@ export default function MemberDashboardPageView({
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-white/15">
+                <div className="rounded-3xl border border-border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -456,7 +467,7 @@ export default function MemberDashboardPageView({
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell className="text-slate-300" colSpan={3}>
+                          <TableCell className="text-muted-foreground" colSpan={3}>
                             No upcoming installments are scheduled.
                           </TableCell>
                         </TableRow>
@@ -466,7 +477,7 @@ export default function MemberDashboardPageView({
                 </div>
               </>
             ) : (
-              <div className="rounded-3xl border border-dashed border-white/15 bg-slate-900/70 px-4 py-10 text-center text-sm text-slate-200">
+              <div className="rounded-3xl border border-dashed border-border bg-secondary px-4 py-10 text-center text-sm text-muted-foreground">
                 No active loan is currently on your profile.
               </div>
             )}
@@ -474,69 +485,18 @@ export default function MemberDashboardPageView({
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
-        <Card className="border-white/15 bg-[#111827]">
-          <CardHeader>
-            <Badge className="w-fit" variant="secondary">
-              Quick Actions
-            </Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
-              Quick actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <MakePaymentDialog
-              activeLoans={paymentLoanOptions}
-              memberId={memberId}
-              memberName={memberName}
-              memberNumber={memberNumber}
-              memberTier={memberTier}
-              shareConfig={shareConfig}
-            />
-            <Button asChild variant="secondary">
-              <Link href={memberTier === "tier_3" ? "/portal/loans" : "/portal/profile"}>
-                <Landmark className="mr-2 h-4 w-4" />
-                {memberTier === "tier_3" ? "Apply for Loan" : "Unlock Loans"}
-              </Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href="/portal/profile">
-                <Wallet className="mr-2 h-4 w-4" />
-                Update Profile
-              </Link>
-            </Button>
-            <Button
-              disabled={isGeneratingStatement}
-              onClick={handleStatementDownload}
-              variant="secondary"
-            >
-              {isGeneratingStatement ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="mr-2 h-4 w-4" />
-              )}
-              View Statement
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href="/portal/notifications">
-                <BellRing className="mr-2 h-4 w-4" />
-                View Notifications
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/15 bg-[#111827]">
+      <section>
+        <Card>
           <CardHeader>
             <Badge className="w-fit" variant="secondary">
               Recent Transactions
             </Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               Latest account activity
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-3xl border border-white/15">
+            <div className="rounded-3xl border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -560,7 +520,7 @@ export default function MemberDashboardPageView({
                             {getPortalTransactionLabel(transaction.source)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-slate-200">
+                        <TableCell className="text-foreground">
                           {transaction.detail}
                         </TableCell>
                         <TableCell
@@ -572,16 +532,15 @@ export default function MemberDashboardPageView({
                         >
                           {formatSignedAmount(transaction.amount)}
                         </TableCell>
-                        <TableCell className="text-slate-300">
+                        <TableCell className="text-muted-foreground">
                           {formatDisplayDate(transaction.date)}
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell className="text-slate-300" colSpan={4}>
-                        Your recent savings, loan, and share transactions will
-                        appear here.
+                      <TableCell className="text-muted-foreground" colSpan={4}>
+                        No transactions posted yet.
                       </TableCell>
                     </TableRow>
                   )}
@@ -592,17 +551,17 @@ export default function MemberDashboardPageView({
         </Card>
       </section>
 
-      <section className="rounded-[28px] border border-white/15 bg-[#111827] px-5 py-5 shadow-xl shadow-black/30">
+      <section className="rounded-[24px] border border-border bg-card px-4 py-5 shadow-xl shadow-black/10 dark:shadow-black/30 sm:rounded-[28px] sm:px-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/15 text-emerald-100">
               <Wallet className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-medium text-white">Your membership journey</p>
-              <p className="text-sm text-slate-300">
+              <p className="font-medium text-foreground">Membership status</p>
+              <p className="text-sm text-muted-foreground">
                 {memberTier === "tier_3"
-                  ? "Your profile is complete and every member portal feature is available."
+                  ? "Tier 3 active"
                   : tierMeta.nextStep}
               </p>
             </div>

@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const KYC_STORAGE_BUCKET = "member-kyc";
-export const MAX_KYC_FILE_SIZE = 10 * 1024 * 1024;
+export const MAX_KYC_FILE_SIZE = 1 * 1024 * 1024;
 
 export const KYC_FIELD_CONFIG = {
   nationalId: {
     label: "National ID",
     description: "Government-issued ID card, slip, or PDF export.",
-    accept: ["image/jpeg", "image/png", "application/pdf"],
+    accept: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
   },
   passportPhoto: {
     label: "Passport Photo",
@@ -17,7 +17,7 @@ export const KYC_FIELD_CONFIG = {
   utilityBill: {
     label: "Utility Bill",
     description: "Recent utility bill or proof of address document.",
-    accept: ["image/jpeg", "image/png", "application/pdf"],
+    accept: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
   },
 } as const;
 
@@ -92,7 +92,7 @@ export function validateKycFile(
   }
 
   if (value.size > MAX_KYC_FILE_SIZE) {
-    return `${config.label} must be 10MB or smaller.`;
+    return `${config.label} must be 1MB or smaller.`;
   }
 
   return null;

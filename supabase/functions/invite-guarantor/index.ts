@@ -196,7 +196,7 @@ async function sendEmailNotification({
     body: JSON.stringify({
       from,
       to: [email],
-      subject: "Guarantor request from Ifemelumma Cooperative Society",
+      subject: "Guarantor request from Ifemelunma Cooperative Society",
       html: `
         <p>Hello,</p>
         <p><strong>${applicantName}</strong> has listed you as a guarantor for a <strong>${loanProductName}</strong> loan request.</p>
@@ -461,7 +461,7 @@ Deno.serve(async (request) => {
       },
       body: JSON.stringify({
         actionUrl,
-        emailSubject: "Guarantor request from Ifemelumma Cooperative Society",
+        emailSubject: "Guarantor request from Ifemelunma Cooperative Society",
         memberId: payload.guarantorMemberId,
         message: [
           `${applicantProfileRecord.full_name} listed you as a guarantor for ${loanProductRecord.name}.`,

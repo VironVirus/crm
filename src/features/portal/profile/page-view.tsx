@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { type ChangeEvent, useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type Resolver, useForm } from "react-hook-form";
 import {
@@ -22,14 +22,17 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { compressImageToWebp } from "@/lib/image-compression";
 import {
   getMemberTierMeta,
   getTierUpgradeLabel,
   type MemberTier,
 } from "@/lib/member-tier";
 import {
+  MAX_KYC_FILE_SIZE,
   memberKycSchema,
   memberNextOfKinSchema,
+  type KycFieldName,
   type MemberKycValues,
   type MemberNextOfKinValues,
 } from "@/lib/validation/member-registration";
@@ -61,7 +64,7 @@ function FieldMessage({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-xs text-rose-200">{message}</p>;
+  return <p className="text-xs text-rose-700 dark:text-rose-200">{message}</p>;
 }
 
 function StatusPill({
@@ -75,8 +78,8 @@ function StatusPill({
     <div
       className={`rounded-2xl border px-4 py-3 text-sm ${
         complete
-          ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
-          : "border-amber-300/20 bg-amber-400/10 text-amber-100"
+          ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-100"
+          : "border-amber-300/20 bg-amber-400/10 text-amber-800 dark:text-amber-100"
       }`}
     >
       <p className="font-medium">{label}</p>
@@ -106,6 +109,7 @@ export default function MemberProfilePageView({
   const [kycMessage, setKycMessage] = useState<string | null>(null);
   const [kycError, setKycError] = useState<string | null>(null);
   const [kycInputKey, setKycInputKey] = useState(0);
+  const [isPreparingKyc, setIsPreparingKyc] = useState(false);
   const [isRefreshing, startTransition] = useTransition();
   const tierMeta = getMemberTierMeta(tier);
 
@@ -207,39 +211,72 @@ export default function MemberProfilePageView({
     });
   });
 
+  async function handleKycFileChange(
+    fieldName: KycFieldName,
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    const input = event.currentTarget;
+    const file = input.files?.item(0) ?? null;
+
+    setKycError(null);
+    setKycMessage(null);
+
+    if (!file) {
+      kycForm.setValue(fieldName, null, { shouldValidate: true });
+      return;
+    }
+
+    setIsPreparingKyc(true);
+
+    try {
+      const preparedFile = await compressImageToWebp(file, MAX_KYC_FILE_SIZE);
+      kycForm.setValue(fieldName, preparedFile, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    } catch (error) {
+      input.value = "";
+      kycForm.setValue(fieldName, null, { shouldValidate: true });
+      setKycError(
+        error instanceof Error
+          ? error.message
+          : "We could not prepare this file for upload.",
+      );
+    } finally {
+      setIsPreparingKyc(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {dataError ? (
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
           {dataError}
         </div>
       ) : null}
 
-      <section className="rounded-[32px] border border-white/15 bg-[#111827] p-6 shadow-2xl shadow-black/30">
+      <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
             <Badge className="w-fit">{tierMeta.label}</Badge>
             <div>
-              <h2 className="font-['Outfit'] text-3xl font-semibold text-white">
+              <h2 className="font-['Outfit'] text-3xl font-semibold text-foreground">
                 {memberName}
               </h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {memberNumber ?? "Member number pending"}
               </p>
             </div>
-            <p className="max-w-2xl text-sm leading-6 text-slate-200">
-              {tierMeta.description}
-            </p>
           </div>
 
           <div className="rounded-[28px] border border-emerald-400/15 bg-emerald-500/10 px-5 py-4">
             <p className="text-xs uppercase tracking-[0.28em] text-emerald-200">
               {getTierUpgradeLabel(tier)}
             </p>
-            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-white">
+            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
               {tierMeta.medal} member
             </p>
-            <p className="mt-1 text-sm text-slate-200">{tierMeta.nextStep}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{tierMeta.nextStep}</p>
           </div>
         </div>
       </section>
@@ -261,67 +298,64 @@ export default function MemberProfilePageView({
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <Badge className="w-fit" variant="secondary">
               Personal details
             </Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               Your registration details
             </CardTitle>
-            <CardDescription className="text-slate-200">
-              These are the details currently stored on your account.
-            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 Email
               </p>
-              <p className="mt-2 text-sm text-white">{email}</p>
+              <p className="mt-2 text-sm text-foreground">{email}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 Phone
               </p>
-              <p className="mt-2 text-sm text-white">{phone ?? "Not added yet"}</p>
+              <p className="mt-2 text-sm text-foreground">{phone ?? "Not added yet"}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 Date of birth
               </p>
-              <p className="mt-2 text-sm text-white">{dateOfBirth}</p>
+              <p className="mt-2 text-sm text-foreground">{dateOfBirth}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 Occupation
               </p>
-              <p className="mt-2 text-sm text-white">{occupation}</p>
+              <p className="mt-2 text-sm text-foreground">{occupation}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 sm:col-span-2">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 sm:col-span-2">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 Address
               </p>
-              <p className="mt-2 text-sm leading-6 text-white">{address}</p>
+              <p className="mt-2 text-sm leading-6 text-foreground">{address}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <Badge className="w-fit">Tier progress</Badge>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
-              What each tier unlocks
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+              Membership tier
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
               Tier 1: savings, payments, statements, and notifications.
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
               Tier 2: everything in Tier 1 plus governance and voting access.
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
               Tier 3: full portal access, including loans and shares.
             </div>
           </CardContent>
@@ -329,17 +363,15 @@ export default function MemberProfilePageView({
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
               <UserRound className="h-5 w-5 text-amber-200" />
               <div>
-                <CardTitle className="font-['Outfit'] text-2xl text-white">
+                <CardTitle className="font-['Outfit'] text-2xl text-foreground">
                   Add next of kin
                 </CardTitle>
-                <CardDescription className="text-slate-200">
-                  Completing this unlocks Tier 2.
-                </CardDescription>
+                <CardDescription>Tier 2</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -349,7 +381,7 @@ export default function MemberProfilePageView({
                 <Label htmlFor="nextOfKinName">Next of kin name</Label>
                 <Input
                   id="nextOfKinName"
-                  placeholder="Chinedu Okonkwo"
+                  placeholder="Full name"
                   {...nextOfKinForm.register("nextOfKinName")}
                 />
                 <FieldMessage
@@ -362,7 +394,7 @@ export default function MemberProfilePageView({
                   <Label htmlFor="nextOfKinPhone">Phone number</Label>
                   <Input
                     id="nextOfKinPhone"
-                    placeholder="+234 800 111 1111"
+                    placeholder="Phone number"
                     type="tel"
                     {...nextOfKinForm.register("nextOfKinPhone")}
                   />
@@ -375,7 +407,7 @@ export default function MemberProfilePageView({
                   <Label htmlFor="nextOfKinRelationship">Relationship</Label>
                   <Input
                     id="nextOfKinRelationship"
-                    placeholder="Sibling, spouse, parent..."
+                    placeholder="Relationship"
                     {...nextOfKinForm.register("nextOfKinRelationship")}
                   />
                   <FieldMessage
@@ -387,13 +419,13 @@ export default function MemberProfilePageView({
               </div>
 
               {profileError ? (
-                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
                   {profileError}
                 </div>
               ) : null}
 
               {profileMessage ? (
-                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
                   {profileMessage}
                 </div>
               ) : null}
@@ -415,17 +447,15 @@ export default function MemberProfilePageView({
           </CardContent>
         </Card>
 
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
               <UploadCloud className="h-5 w-5 text-emerald-200" />
               <div>
-                <CardTitle className="font-['Outfit'] text-2xl text-white">
+                <CardTitle className="font-['Outfit'] text-2xl text-foreground">
                   Upload KYC
                 </CardTitle>
-                <CardDescription className="text-slate-200">
-                  Completing this unlocks Tier 3.
-                </CardDescription>
+                <CardDescription>Tier 3 · 1MB maximum per file</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -435,16 +465,10 @@ export default function MemberProfilePageView({
                 <Label htmlFor="nationalId">National ID</Label>
                 <Input
                   id="nationalId"
-                  accept=".jpg,.jpeg,.png,.pdf"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
                   key={`national-id-${kycInputKey}`}
                   type="file"
-                  onChange={(event) =>
-                    kycForm.setValue(
-                      "nationalId",
-                      event.target.files?.item(0) ?? null,
-                      { shouldValidate: true },
-                    )
-                  }
+                  onChange={(event) => void handleKycFileChange("nationalId", event)}
                 />
                 <FieldMessage message={kycForm.formState.errors.nationalId?.message} />
               </div>
@@ -457,11 +481,7 @@ export default function MemberProfilePageView({
                   key={`passport-photo-${kycInputKey}`}
                   type="file"
                   onChange={(event) =>
-                    kycForm.setValue(
-                      "passportPhoto",
-                      event.target.files?.item(0) ?? null,
-                      { shouldValidate: true },
-                    )
+                    void handleKycFileChange("passportPhoto", event)
                   }
                 />
                 <FieldMessage
@@ -473,16 +493,10 @@ export default function MemberProfilePageView({
                 <Label htmlFor="utilityBill">Utility bill</Label>
                 <Input
                   id="utilityBill"
-                  accept=".jpg,.jpeg,.png,.pdf"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
                   key={`utility-bill-${kycInputKey}`}
                   type="file"
-                  onChange={(event) =>
-                    kycForm.setValue(
-                      "utilityBill",
-                      event.target.files?.item(0) ?? null,
-                      { shouldValidate: true },
-                    )
-                  }
+                  onChange={(event) => void handleKycFileChange("utilityBill", event)}
                 />
                 <FieldMessage message={kycForm.formState.errors.utilityBill?.message} />
               </div>
@@ -497,22 +511,29 @@ export default function MemberProfilePageView({
               </div>
 
               {kycError ? (
-                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
                   {kycError}
                 </div>
               ) : null}
 
               {kycMessage ? (
-                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
                   {kycMessage}
                 </div>
               ) : null}
 
-              <Button disabled={kycForm.formState.isSubmitting || isRefreshing} type="submit">
-                {kycForm.formState.isSubmitting ? (
+              <Button
+                disabled={
+                  kycForm.formState.isSubmitting ||
+                  isPreparingKyc ||
+                  isRefreshing
+                }
+                type="submit"
+              >
+                {kycForm.formState.isSubmitting || isPreparingKyc ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
+                    {isPreparingKyc ? "Preparing..." : "Uploading..."}
                   </>
                 ) : (
                   <>

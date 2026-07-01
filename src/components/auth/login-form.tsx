@@ -55,11 +55,11 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   };
 
   return (
-    <Card className="border-white/10 bg-slate-950/70 text-white shadow-[0_30px_80px_rgba(2,6,23,0.55)] backdrop-blur">
+    <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
       <CardHeader className="space-y-3">
-        <div className="inline-flex w-fit rounded-full border border-white/10 bg-white/5 p-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+        <div className="inline-flex w-fit rounded-full border border-border bg-secondary p-1 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           <button
-            className="rounded-full bg-emerald-500/15 px-4 py-2 text-emerald-200 transition"
+            className="rounded-full bg-emerald-500/15 px-4 py-2 text-emerald-700 transition dark:text-emerald-200"
             type="button"
           >
             <span className="inline-flex items-center gap-2">
@@ -79,10 +79,6 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
           Access your dashboard
         </CardTitle>
-        <p className="text-sm leading-6 text-slate-300">
-          Sign in with your registered member or administrator account to manage
-          your cooperative activity in one place.
-        </p>
       </CardHeader>
       <CardContent>
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -92,7 +88,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="member@ifemelumma.coop"
+              placeholder="Email address"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -105,7 +101,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
               id="password"
               type="password"
               autoComplete="current-password"
-              placeholder="Enter your password"
+              placeholder="Password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -113,7 +109,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           </div>
 
           {errorMessage ? (
-            <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
               {errorMessage}
             </div>
           ) : null}
@@ -132,9 +128,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
             )}
           </Button>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-slate-300">
+          <div className="rounded-2xl border border-border bg-secondary px-4 py-3 text-sm leading-6 text-muted-foreground">
             Need a new member account?{" "}
-            <Link className="font-medium text-emerald-200 hover:text-emerald-100" href="/register">
+            <Link className="font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-200 dark:hover:text-emerald-100" href="/register">
               Create your account
             </Link>
             .

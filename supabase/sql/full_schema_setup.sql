@@ -1,4 +1,4 @@
--- Ifemelumma Cooperative Society
+-- Ifemelunma Cooperative Society
 -- Consolidated Supabase setup script for manual SQL editor use.
 -- This is the main schema file to run for full setup.
 -- Future base schema additions should be merged into this file.
@@ -555,7 +555,7 @@ values (
   'member-kyc',
   'member-kyc',
   false,
-  10485760,
+  1048576,
   array[
     'image/jpeg',
     'image/png',

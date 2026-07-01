@@ -199,7 +199,7 @@ export default function AdminReportsPageView({
         response.headers
           .get("content-disposition")
           ?.match(/filename="([^"]+)"/)?.[1] ??
-        `ifemelumma-member-statement-${getReportStamp()}.pdf`;
+        `ifemelunma-member-statement-${getReportStamp()}.pdf`;
       const blob = await response.blob();
 
       downloadBlob(blob, filename);
@@ -228,7 +228,7 @@ export default function AdminReportsPageView({
 
     try {
       await exportWorkbook({
-        fileName: `ifemelumma-loan-book-${getReportStamp()}.xlsx`,
+        fileName: `ifemelunma-loan-book-${getReportStamp()}.xlsx`,
         rows: loanBookRows.map((row) => ({
           disbursement_date: row.disbursementDate
             ? formatReportDate(row.disbursementDate)
@@ -263,7 +263,7 @@ export default function AdminReportsPageView({
 
     try {
       await exportWorkbook({
-        fileName: `ifemelumma-trial-balance-${getReportStamp()}.xlsx`,
+        fileName: `ifemelunma-trial-balance-${getReportStamp()}.xlsx`,
         rows: [
           ...trialBalanceRows.map((row) => ({
             account_code: row.accountCode,
@@ -299,7 +299,7 @@ export default function AdminReportsPageView({
 
     try {
       await exportWorkbook({
-        fileName: `ifemelumma-monthly-collections-${getReportStamp()}.xlsx`,
+        fileName: `ifemelunma-monthly-collections-${getReportStamp()}.xlsx`,
         rows: monthlyCollections.map((point) => ({
           month: formatReportMonth(point.monthKey),
           loan_repayments: point.loanRepayments,

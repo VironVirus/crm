@@ -1,4 +1,4 @@
--- Ifemelumma Cooperative Society
+-- Ifemelunma Cooperative Society
 -- Production hardening patch for existing Supabase projects.
 -- Run this after supabase/sql/full_schema_setup.sql if your database already exists.
 

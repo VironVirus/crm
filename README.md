@@ -1,4 +1,4 @@
-# Ifemelumma Cooperative Society
+# Ifemelunma Cooperative Society
 
 Next.js 14, Supabase, Tailwind CSS, and shadcn/ui cooperative society management system.
 

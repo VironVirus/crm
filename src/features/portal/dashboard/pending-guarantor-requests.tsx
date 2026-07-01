@@ -75,13 +75,13 @@ export function PendingGuarantorRequestsPanel({
   return (
     <div className="space-y-3">
       {errorMessage ? (
-        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
           {errorMessage}
         </div>
       ) : null}
 
       {feedbackMessage ? (
-        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
           {feedbackMessage}
         </div>
       ) : null}
@@ -93,35 +93,35 @@ export function PendingGuarantorRequestsPanel({
           return (
             <div
               key={request.id}
-              className="rounded-3xl border border-white/10 bg-slate-950/60 p-4"
+              className="rounded-3xl border border-border bg-card p-4"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="font-medium text-white">{request.applicantName}</p>
-                  <p className="mt-1 text-sm text-slate-300">
+                  <p className="font-medium text-foreground">{request.applicantName}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {request.applicantMemberNumber ?? "Member number pending"} ·{" "}
                     {request.loanProductName}
                   </p>
                 </div>
-                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.22em] text-slate-300">
+                <div className="rounded-full border border-border bg-secondary px-3 py-1 text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   Invited {formatDisplayDate(request.invitedAt)}
                 </div>
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl border border-border bg-secondary px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                     Loan amount
                   </p>
-                  <p className="mt-2 text-sm font-medium text-white">
+                  <p className="mt-2 text-sm font-medium text-foreground">
                     {formatNaira(request.amountRequested)}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl border border-border bg-secondary px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                     Tenure
                   </p>
-                  <p className="mt-2 text-sm font-medium text-white">
+                  <p className="mt-2 text-sm font-medium text-foreground">
                     {request.tenureMonths} months
                   </p>
                 </div>
@@ -129,7 +129,7 @@ export function PendingGuarantorRequestsPanel({
                   <p className="text-xs uppercase tracking-[0.22em] text-emerald-200">
                     Liability share
                   </p>
-                  <p className="mt-2 text-sm font-medium text-white">
+                  <p className="mt-2 text-sm font-medium text-foreground">
                     {formatNaira(request.liabilityAmount)}
                   </p>
                 </div>
@@ -170,7 +170,7 @@ export function PendingGuarantorRequestsPanel({
           );
         })
       ) : (
-        <div className="rounded-3xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-10 text-center text-sm text-slate-400">
+        <div className="rounded-3xl border border-dashed border-border bg-secondary px-4 py-10 text-center text-sm text-muted-foreground">
           No pending guarantor requests right now.
         </div>
       )}

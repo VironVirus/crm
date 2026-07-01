@@ -252,7 +252,7 @@ export default function AdminSavingsPageView({
       XLSX.utils.book_append_sheet(workbook, worksheet, "Savings Accounts");
       XLSX.writeFile(
         workbook,
-        `ifemelumma-savings-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        `ifemelunma-savings-${new Date().toISOString().slice(0, 10)}.xlsx`,
       );
     } finally {
       setIsExporting(false);

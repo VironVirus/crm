@@ -383,7 +383,7 @@ export async function POST(request: NextRequest) {
             ? "/portal/loans"
             : "/portal",
       contextLabel: `${paymentLabel} notification`,
-      emailSubject: `${paymentLabel} confirmed - Ifemelumma Cooperative Society`,
+      emailSubject: `${paymentLabel} confirmed - Ifemelunma Cooperative Society`,
       memberId,
       message: `We confirmed your ${paymentLabel.toLowerCase()} of ${formatPaymentAmount(
         verifiedAmount,

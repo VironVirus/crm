@@ -32,6 +32,7 @@ async function uploadKycDocument(
   const { error } = await admin.storage
     .from(KYC_STORAGE_BUCKET)
     .upload(objectPath, file, {
+      cacheControl: "31536000",
       contentType: file.type,
       upsert: false,
     });

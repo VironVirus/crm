@@ -1,4 +1,4 @@
--- Ifemelumma Cooperative Society
+-- Ifemelunma Cooperative Society
 -- Post-schema patch for member notifications and realtime subscriptions.
 -- Use this when your main schema was already run before notifications were added.
 

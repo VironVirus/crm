@@ -108,7 +108,7 @@ async function sendEmailNotification({
     body: JSON.stringify({
       from,
       to: [email],
-      subject: `${paymentLabel} confirmed - Ifemelumma Cooperative Society`,
+      subject: `${paymentLabel} confirmed - Ifemelunma Cooperative Society`,
       html: `
         <p>Hello ${fullName},</p>
         <p>Your <strong>${paymentLabel.toLowerCase()}</strong> has been confirmed.</p>
@@ -159,7 +159,7 @@ export async function sendMemberPaymentConfirmation({
 }) {
   const paymentLabel = formatPaymentTypeLabel(paymentType);
   const smsMessage = [
-    `${paymentLabel} confirmed by Ifemelumma Cooperative Society.`,
+    `${paymentLabel} confirmed by Ifemelunma Cooperative Society.`,
     `Amount: ${formatPaymentAmount(amount)}.`,
     `Reference: ${reference}.`,
   ].join(" ");

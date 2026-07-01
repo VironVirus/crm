@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
       },
       customizations: {
         description,
-        title: "Ifemelumma Cooperative Society",
+        title: "Ifemelunma Cooperative Society",
       },
       meta,
       redirect_url: getFlutterwaveRedirectUrl(txRef),

@@ -109,7 +109,7 @@ values (
   'member-kyc',
   'member-kyc',
   false,
-  10485760,
+  1048576,
   array[
     'image/jpeg',
     'image/png',

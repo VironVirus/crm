@@ -211,7 +211,7 @@ export async function POST(
   const notificationResult = await sendMemberNotification(admin, {
     actionUrl: "/portal/loans",
     contextLabel: "Loan approval notification",
-    emailSubject: "Loan approval update - Ifemelumma Cooperative Society",
+    emailSubject: "Loan approval update - Ifemelunma Cooperative Society",
     memberId: selectedApplication.member_id,
     message: `Your ${productRecord.name} application for ${formatNaira(
       parseMoney(selectedApplication.amount_requested),

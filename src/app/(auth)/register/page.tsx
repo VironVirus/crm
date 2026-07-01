@@ -1,42 +1,20 @@
 import { MemberRegistrationForm } from "@/components/auth/member-registration-form";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export default function RegisterPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.24),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.18),_transparent_30%),linear-gradient(180deg,_#06080d,_#0b1120)] px-6 py-10 text-white">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:96px_96px] opacity-30" />
-      <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 lg:grid-cols-[1fr_1.05fr]">
-        <section className="space-y-8">
-          <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            Start your cooperative membership
-          </div>
-          <div className="space-y-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300">
-              Ifemelumma Cooperative Society
-            </p>
-            <h1 className="max-w-2xl font-['Outfit'] text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Create your account and receive your cooperative number instantly.
-            </h1>
-            <p className="max-w-2xl text-lg leading-8 text-slate-300">
-              Begin with your personal details today. After sign-in, you can
-              complete next of kin and KYC from your profile to unlock higher
-              membership tiers.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              "Quick member sign-up",
-              "Instant dashboard access",
-              "Automatic member number",
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200 shadow-2xl backdrop-blur"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.12),_transparent_30%),linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)))] px-4 py-8 text-foreground sm:px-6 sm:py-10">
+      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
+      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="space-y-5">
+          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-500 dark:text-amber-300">
+            Ifemelunma Cooperative Society
+          </p>
+          <h1 className="max-w-2xl font-['Outfit'] text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            Create your member account.
+          </h1>
         </section>
 
         <MemberRegistrationForm />

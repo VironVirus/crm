@@ -188,7 +188,7 @@ async function sendEmailNotification({
     body: JSON.stringify({
       from,
       to: [email],
-      subject: "Monthly contribution reminder from Ifemelumma Cooperative Society",
+      subject: "Monthly contribution reminder from Ifemelunma Cooperative Society",
       html: `
         <p>Hello ${fullName},</p>
         <p>Your monthly cooperative contribution of <strong>${formatNaira(amount)}</strong> is due on the <strong>${dueDayLabel}</strong>.</p>
@@ -368,7 +368,7 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         actionUrl: "/portal",
         emailSubject:
-          "Monthly contribution reminder - Ifemelumma Cooperative Society",
+          "Monthly contribution reminder - Ifemelunma Cooperative Society",
         memberId,
         message: `Dear ${reminder.fullName}, your monthly contribution of ${formatNaira(
           reminder.amount,

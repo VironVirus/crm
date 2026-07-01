@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
           (dividendPayments as DividendPaymentRecord[]).map((payment) => ({
             actionUrl: "/portal",
             contextLabel: `Dividend notification for ${payment.member_id}`,
-            emailSubject: `Dividend update for ${parsed.data.financialYear} - Ifemelumma Cooperative Society`,
+            emailSubject: `Dividend update for ${parsed.data.financialYear} - Ifemelunma Cooperative Society`,
             memberId: payment.member_id,
             message: `A dividend payment of ${formatNaira(
               parseSupabaseNumeric(payment.dividend_amount),

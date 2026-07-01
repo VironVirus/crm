@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 type AdminShellProps = {
   children: React.ReactNode;
@@ -55,17 +56,17 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
   const moreItems = useMemo(() => adminItems.slice(5), []);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.12),_transparent_28%),linear-gradient(180deg,_#05070c,_#0b1220)] text-white">
-      <div className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-        <header className="sticky top-4 z-30 mb-6 rounded-[30px] border border-white/15 bg-[#111827]/95 px-5 py-4 shadow-2xl shadow-black/30 backdrop-blur">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.1),_transparent_30%),linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)))] text-foreground">
+      <div className="mx-auto min-h-screen max-w-7xl px-3 pb-28 pt-3 sm:px-6 sm:pt-4 lg:px-8">
+        <header className="sticky top-3 z-30 mb-5 rounded-[24px] border border-border bg-card/95 px-4 py-4 shadow-xl shadow-black/10 backdrop-blur dark:shadow-black/30 sm:top-4 sm:rounded-[30px] sm:px-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-amber-300 text-slate-950 shadow-lg">
                 <Building2 className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-['Outfit'] text-lg font-semibold text-white">
-                  Ifemelumma Cooperative Society
+                <p className="font-['Outfit'] text-base font-semibold text-foreground sm:text-lg">
+                  Ifemelunma Cooperative Society
                 </p>
                 <p className="text-xs uppercase tracking-[0.24em] text-amber-300">
                   Admin dashboard
@@ -73,24 +74,27 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
               </div>
             </div>
 
-            <button
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-              onClick={() => setMenuOpen(true)}
-              type="button"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle className="hidden sm:flex" />
+              <button
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground transition hover:bg-muted"
+                onClick={() => setMenuOpen(true)}
+                type="button"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
-          <div className="mt-4 rounded-[26px] border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
-            Manage members, savings, loans, shares, and reports from one place.
+          <div className="mt-4 rounded-[22px] border border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground sm:rounded-[26px]">
+            Administration
           </div>
         </header>
 
         <main>{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#08111d]/95 px-3 py-3 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-2 py-2 backdrop-blur sm:px-3 sm:py-3">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-2">
           {primaryItems.map((item) => {
             const Icon = item.icon;
@@ -101,8 +105,8 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
                 key={item.href}
                 className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
                   active
-                    ? "bg-emerald-500/15 text-emerald-100"
-                    : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
                 href={item.href}
               >
@@ -115,8 +119,8 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
           <button
             className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
               pathname.startsWith("/admin/shares")
-                ? "bg-emerald-500/15 text-emerald-100"
-                : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}
             onClick={() => setMenuOpen(true)}
             type="button"
@@ -128,20 +132,20 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
       </nav>
 
       {menuOpen ? (
-        <div className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm">
-          <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-white/10 bg-[#0b1220] p-5 shadow-2xl shadow-black/60">
+        <div className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm">
+          <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-border bg-card p-5 text-card-foreground shadow-2xl shadow-black/20 dark:shadow-black/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-100">
                   {initials}
                 </div>
                 <div>
-                  <p className="font-medium text-white">{userEmail ?? "Administrator"}</p>
-                  <p className="text-sm text-slate-300">Administrative access</p>
+                  <p className="font-medium text-foreground">{userEmail ?? "Administrator"}</p>
+                  <p className="text-sm text-muted-foreground">Administrative access</p>
                 </div>
               </div>
               <button
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground"
                 onClick={() => setMenuOpen(false)}
                 type="button"
               >
@@ -150,7 +154,7 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
             </div>
 
             <div className="mt-6 space-y-3">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+              <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
                 Navigation
               </p>
               <div className="space-y-2">
@@ -163,8 +167,8 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
                       key={item.href}
                       className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                         active
-                          ? "bg-emerald-500/15 text-emerald-100"
-                          : "text-slate-200 hover:bg-white/[0.06] hover:text-white"
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
+                          : "text-foreground hover:bg-secondary"
                       }`}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
@@ -178,15 +182,14 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
             </div>
 
             {moreItems.length > 0 ? (
-              <div className="mt-6 rounded-[26px] border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200">
-                Additional sections stay grouped here so the main dashboard
-                navigation remains clean on both desktop and mobile.
+              <div className="mt-6 flex justify-end">
+                <ThemeToggle />
               </div>
             ) : null}
 
             <div className="mt-8">
               <SignOutButton
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted"
                 label="Sign out"
               />
             </div>

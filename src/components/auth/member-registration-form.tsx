@@ -37,7 +37,7 @@ function FieldMessage({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-xs text-rose-200">{message}</p>;
+  return <p className="text-xs text-rose-700 dark:text-rose-200">{message}</p>;
 }
 
 export function MemberRegistrationForm() {
@@ -118,7 +118,7 @@ export function MemberRegistrationForm() {
 
   if (success) {
     return (
-      <Card className="border-white/10 bg-slate-950/75 text-white shadow-[0_30px_80px_rgba(2,6,23,0.55)] backdrop-blur">
+      <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
         <CardHeader className="space-y-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-200">
             <CheckCircle2 className="h-8 w-8" />
@@ -126,7 +126,7 @@ export function MemberRegistrationForm() {
           <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
             Registration complete
           </CardTitle>
-          <p className="text-sm leading-6 text-slate-300">
+          <p className="text-sm leading-6 text-muted-foreground">
             {success.fullName} can now sign in with the email and password used
             here, then complete next of kin and KYC from the member profile.
           </p>
@@ -136,7 +136,7 @@ export function MemberRegistrationForm() {
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
               Member number
             </p>
-            <p className="mt-3 font-['Outfit'] text-3xl font-semibold text-white">
+            <p className="mt-3 font-['Outfit'] text-3xl font-semibold text-foreground">
               {success.memberNumber}
             </p>
             <p className="mt-2 text-sm text-emerald-100/80">{success.email}</p>
@@ -162,7 +162,7 @@ export function MemberRegistrationForm() {
   }
 
   return (
-    <Card className="border-white/10 bg-slate-950/75 text-white shadow-[0_30px_80px_rgba(2,6,23,0.55)] backdrop-blur">
+    <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
       <CardHeader className="space-y-5">
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-200">
           <ShieldCheck className="h-4 w-4" />
@@ -172,10 +172,6 @@ export function MemberRegistrationForm() {
           <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
             Create your member account
           </CardTitle>
-          <p className="text-sm leading-6 text-slate-300">
-            Start with your personal details. Next of kin and KYC can be added
-            later from your profile after you sign in.
-          </p>
         </div>
       </CardHeader>
 
@@ -186,7 +182,7 @@ export function MemberRegistrationForm() {
               <Label htmlFor="fullName">Full name</Label>
               <Input
                 id="fullName"
-                placeholder="Adaeze Okonkwo"
+                placeholder="Full name"
                 {...register("fullName")}
               />
               <FieldMessage message={errors.fullName?.message} />
@@ -196,7 +192,7 @@ export function MemberRegistrationForm() {
               <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
-                placeholder="member@ifemelumma.coop"
+                placeholder="Email address"
                 type="email"
                 {...register("email")}
               />
@@ -207,7 +203,7 @@ export function MemberRegistrationForm() {
               <Label htmlFor="phone">Phone number</Label>
               <Input
                 id="phone"
-                placeholder="+234 800 000 0000"
+                placeholder="Phone number"
                 type="tel"
                 {...register("phone")}
               />
@@ -224,7 +220,7 @@ export function MemberRegistrationForm() {
               <Label htmlFor="address">Address</Label>
               <Textarea
                 id="address"
-                placeholder="Full residential address"
+                placeholder="Address"
                 {...register("address")}
               />
               <FieldMessage message={errors.address?.message} />
@@ -234,19 +230,16 @@ export function MemberRegistrationForm() {
               <Label htmlFor="occupation">Occupation</Label>
               <Input
                 id="occupation"
-                placeholder="Teacher, trader, farmer..."
+                placeholder="Occupation"
                 {...register("occupation")}
               />
               <FieldMessage message={errors.occupation?.message} />
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="rounded-3xl border border-border bg-secondary p-5">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-white">Account access</p>
-              <p className="text-xs leading-5 text-slate-400">
-                Use these details to sign in to your dashboard after registration.
-              </p>
+              <p className="text-sm font-medium text-foreground">Account access</p>
             </div>
 
             <div className="mt-4 grid gap-5 sm:grid-cols-2">
@@ -254,7 +247,7 @@ export function MemberRegistrationForm() {
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
-                  placeholder="Choose a secure password"
+                  placeholder="Password"
                   type="password"
                   {...register("password")}
                 />
@@ -265,7 +258,7 @@ export function MemberRegistrationForm() {
                 <Label htmlFor="confirmPassword">Confirm password</Label>
                 <Input
                   id="confirmPassword"
-                  placeholder="Repeat the password"
+                  placeholder="Confirm password"
                   type="password"
                   {...register("confirmPassword")}
                 />
@@ -275,23 +268,18 @@ export function MemberRegistrationForm() {
           </div>
 
           {submitError ? (
-            <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
               {submitError}
             </div>
           ) : null}
 
           {submitPhase ? (
-            <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
               {submitPhase}
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-3 border-t border-white/10 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs leading-6 text-slate-400">
-              Registration creates your dashboard account and assigns your member
-              number immediately.
-            </p>
-
+          <div className="flex flex-col gap-3 border-t border-border pt-2 sm:flex-row sm:items-center sm:justify-end">
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild type="button" variant="outline">
                 <Link href="/login">Back to sign in</Link>

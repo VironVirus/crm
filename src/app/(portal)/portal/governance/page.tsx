@@ -38,12 +38,12 @@ export default async function PortalGovernancePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] border border-white/15 bg-[#111827] p-6 shadow-2xl shadow-black/30">
+      <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
         <Badge className="w-fit">{tierMeta.label}</Badge>
-        <h2 className="mt-4 font-['Outfit'] text-3xl font-semibold text-white">
+        <h2 className="mt-4 font-['Outfit'] text-3xl font-semibold text-foreground">
           Governance and voting
         </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
           {tierMeta.canVote
             ? "You can take part in society voting from this page whenever active resolutions are published."
             : "Voting unlocks after you add your next of kin from your profile."}
@@ -51,25 +51,24 @@ export default async function PortalGovernancePage() {
       </section>
 
       {tierMeta.canVote ? (
-        <Card className="border-white/15 bg-[#111827]">
+        <Card>
           <CardHeader>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               No active votes right now
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm leading-6 text-slate-200">
-            New resolutions and meeting notices will appear here when the
-            cooperative publishes them.
+          <CardContent className="text-sm leading-6 text-muted-foreground">
+            No resolutions have been published.
           </CardContent>
         </Card>
       ) : (
         <Card className="border-amber-300/20 bg-amber-400/10">
           <CardHeader>
-            <CardTitle className="font-['Outfit'] text-2xl text-white">
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               Upgrade to Tier 2
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm leading-6 text-amber-100/90 sm:flex-row sm:items-center sm:justify-between">
+          <CardContent className="flex flex-col gap-4 text-sm leading-6 text-amber-800 dark:text-amber-100/90 sm:flex-row sm:items-center sm:justify-between">
             <p>Add your next of kin to unlock voting and cooperative governance access.</p>
             <Button asChild>
               <Link href="/portal/profile">Open Profile</Link>

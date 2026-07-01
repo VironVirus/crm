@@ -31,7 +31,7 @@ import {
 } from "@/lib/validation/payments";
 
 const SELECT_CLASS_NAME =
-  "flex h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50";
+  "flex h-11 w-full rounded-2xl border border-input bg-background/70 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50";
 
 const defaultValues: MemberPaymentFormValues = {
   accountType: "mandatory",
@@ -46,7 +46,7 @@ function FieldMessage({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-xs text-rose-200">{message}</p>;
+  return <p className="text-xs text-rose-700 dark:text-rose-200">{message}</p>;
 }
 
 function formatPaymentTypeSummary(paymentType: PaymentType) {
@@ -226,22 +226,18 @@ export function MakePaymentDialog({
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Make payment</DialogTitle>
-            <DialogDescription>
-              Choose what you want to pay for, confirm the amount, and continue
-              to Flutterwave checkout.
-            </DialogDescription>
+            <DialogDescription>Flutterwave checkout</DialogDescription>
           </DialogHeader>
 
           <form className="space-y-5" onSubmit={onSubmit}>
             <div className="rounded-3xl border border-emerald-400/15 bg-emerald-500/10 p-4">
-              <p className="font-medium text-white">{memberName}</p>
-              <p className="mt-1 text-sm text-slate-200">
+              <p className="font-medium text-foreground">{memberName}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {memberNumber ?? "Member number pending"} · Secure online payment
               </p>
               {!canAccessTierThreePayments ? (
-                <p className="mt-2 text-xs text-emerald-100/90">
-                  Savings deposits are available now. Loan repayments and share
-                  purchases unlock at Tier 3.
+                <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-100/90">
+                  Tier 3 unlocks loan repayments and share purchases.
                 </p>
               ) : null}
             </div>
@@ -253,21 +249,21 @@ export function MakePaymentDialog({
                 className={SELECT_CLASS_NAME}
                 {...register("paymentType")}
               >
-                <option className="bg-slate-950 text-white" value="savings_deposit">
+                <option value="savings_deposit">
                   Savings deposit
                 </option>
                 {canAccessTierThreePayments ? (
-                  <option className="bg-slate-950 text-white" value="loan_repayment">
+                  <option value="loan_repayment">
                     Loan repayment
                   </option>
                 ) : null}
                 {canAccessTierThreePayments ? (
-                  <option className="bg-slate-950 text-white" value="share_purchase">
+                  <option value="share_purchase">
                     Share purchase
                   </option>
                 ) : null}
               </select>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 {formatPaymentTypeSummary(paymentType)}
               </p>
             </div>
@@ -287,15 +283,12 @@ export function MakePaymentDialog({
                 <FieldMessage message={errors.amount?.message?.toString()} />
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-slate-950/60 px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+              <div className="rounded-3xl border border-border bg-secondary px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   Checkout amount
                 </p>
-                <p className="mt-2 text-lg font-semibold text-white">
+                <p className="mt-2 text-lg font-semibold text-foreground">
                   {formatPaymentAmount(amount)}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  You will complete this securely on Flutterwave.
                 </p>
               </div>
             </div>
@@ -308,13 +301,13 @@ export function MakePaymentDialog({
                   className={SELECT_CLASS_NAME}
                   {...register("accountType")}
                 >
-                  <option className="bg-slate-950 text-white" value="mandatory">
+                  <option value="mandatory">
                     Mandatory savings
                   </option>
-                  <option className="bg-slate-950 text-white" value="voluntary">
+                  <option value="voluntary">
                     Voluntary savings
                   </option>
-                  <option className="bg-slate-950 text-white" value="fixed_deposit">
+                  <option value="fixed_deposit">
                     Fixed deposit
                   </option>
                 </select>
@@ -333,14 +326,13 @@ export function MakePaymentDialog({
                     {...register("loanId")}
                   >
                     {activeLoans.length === 0 ? (
-                      <option className="bg-slate-950 text-white" value="">
+                      <option value="">
                         No active loans to repay
                       </option>
                     ) : null}
                     {activeLoans.map((loan) => (
                       <option
                         key={loan.id}
-                        className="bg-slate-950 text-white"
                         value={loan.id}
                       >
                         {loan.productName} · Outstanding {formatPaymentAmount(loan.outstandingBalance)}
@@ -352,16 +344,16 @@ export function MakePaymentDialog({
 
                 {selectedLoan ? (
                   <div className="rounded-3xl border border-amber-300/15 bg-amber-400/10 p-4">
-                    <p className="font-medium text-white">{selectedLoan.productName}</p>
-                    <p className="mt-1 text-sm text-slate-200">
+                    <p className="font-medium text-foreground">{selectedLoan.productName}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
                       Outstanding balance: {formatPaymentAmount(selectedLoan.outstandingBalance)}
                     </p>
-                    <p className="mt-1 text-sm text-slate-300">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       Scheduled monthly repayment: {formatPaymentAmount(selectedLoan.monthlyRepayment)}
                     </p>
                   </div>
                 ) : (
-                  <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-4 text-sm text-slate-300">
+                  <div className="rounded-3xl border border-border bg-secondary p-4 text-sm text-muted-foreground">
                     You do not have an active loan available for repayment yet.
                   </div>
                 )}
@@ -369,14 +361,14 @@ export function MakePaymentDialog({
             ) : null}
 
             {paymentType === "share_purchase" ? (
-              <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
-                <div className="flex items-center gap-3 text-white">
+              <div className="rounded-3xl border border-border bg-secondary p-4">
+                <div className="flex items-center gap-3 text-foreground">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
                     <PiggyBank className="h-5 w-5" />
                   </div>
                   <div>
                     <p className="font-medium">Share purchase preview</p>
-                    <p className="text-sm text-slate-300">
+                    <p className="text-sm text-muted-foreground">
                       {shareConfig
                         ? `${formatPaymentAmount(shareConfig.shareValue)} per share unit`
                         : "Share configuration unavailable"}
@@ -386,11 +378,11 @@ export function MakePaymentDialog({
 
                 {shareConfig ? (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                    <div className="rounded-2xl border border-border bg-background/70 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                         Estimated share units
                       </p>
-                      <p className="mt-2 text-2xl font-semibold text-white">
+                      <p className="mt-2 text-2xl font-semibold text-foreground">
                         {projectedShareUnits > 0
                           ? hasExactShareMultiple
                             ? projectedShareUnits.toFixed(0)
@@ -398,11 +390,11 @@ export function MakePaymentDialog({
                           : "0"}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                    <div className="rounded-2xl border border-border bg-background/70 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                         Minimum guidance
                       </p>
-                      <p className="mt-2 text-lg font-semibold text-white">
+                      <p className="mt-2 text-lg font-semibold text-foreground">
                         {shareConfig.minimumShares} share
                         {shareConfig.minimumShares === 1 ? "" : "s"}
                       </p>
@@ -411,7 +403,7 @@ export function MakePaymentDialog({
                 ) : null}
 
                 {shareConfig && amount > 0 && !hasExactShareMultiple ? (
-                  <p className="mt-4 text-sm text-amber-200">
+                  <p className="mt-4 text-sm text-amber-700 dark:text-amber-200">
                     Enter an amount that matches the current share value exactly.
                   </p>
                 ) : null}
@@ -437,7 +429,7 @@ export function MakePaymentDialog({
             </div>
 
             {serverError ? (
-              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
                 {serverError}
               </div>
             ) : null}

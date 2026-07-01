@@ -214,7 +214,7 @@ export default function AdminSharesPageView({
       XLSX.utils.book_append_sheet(workbook, worksheet, "Share Register");
       XLSX.writeFile(
         workbook,
-        `ifemelumma-share-register-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        `ifemelunma-share-register-${new Date().toISOString().slice(0, 10)}.xlsx`,
       );
     } finally {
       setIsExporting(false);

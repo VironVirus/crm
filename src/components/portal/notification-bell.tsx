@@ -166,7 +166,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       <button
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+        className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card/80 text-foreground transition hover:bg-secondary"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
         type="button"
       >
@@ -179,21 +179,21 @@ export function NotificationBell({ userId }: { userId: string }) {
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 z-30 mt-3 w-[22rem] overflow-hidden rounded-[28px] border border-white/10 bg-[#08111d]/95 shadow-2xl shadow-black/40 backdrop-blur">
-          <div className="border-b border-white/10 px-5 py-4">
+        <div className="absolute right-0 z-30 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[28px] border border-border bg-card/95 shadow-2xl shadow-black/20 backdrop-blur dark:shadow-black/40">
+          <div className="border-b border-border px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-amber-300">
                   Notifications
                 </p>
-                <p className="mt-1 text-sm text-slate-300">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {unreadCount > 0
                     ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}`
                     : "You are all caught up"}
                 </p>
               </div>
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               ) : null}
             </div>
           </div>
@@ -215,24 +215,24 @@ export function NotificationBell({ userId }: { userId: string }) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] uppercase tracking-[0.24em] text-slate-300">
+                          <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
                             {formatNotificationTypeLabel(notification.type)}
                           </span>
                           {!notification.isRead ? (
                             <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
                           ) : null}
                         </div>
-                        <p className="text-sm font-semibold text-white">
+                        <p className="text-sm font-semibold text-foreground">
                           {notification.title}
                         </p>
-                        <p className="text-sm leading-6 text-slate-200">
+                        <p className="text-sm leading-6 text-muted-foreground">
                           {notification.message}
                         </p>
                       </div>
                       {updatingId === notification.id ? (
-                        <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-slate-300" />
+                        <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
                       ) : (
-                        <span className="shrink-0 text-xs text-slate-300">
+                        <span className="shrink-0 text-xs text-muted-foreground">
                           {formatNotificationRelativeTime(notification.createdAt)}
                         </span>
                       )}
@@ -241,15 +241,15 @@ export function NotificationBell({ userId }: { userId: string }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-slate-300">
-                New cooperative updates will appear here.
+              <div className="rounded-3xl border border-dashed border-border bg-secondary px-4 py-8 text-center text-sm text-muted-foreground">
+                No notifications yet.
               </div>
             )}
           </div>
 
-          <div className="border-t border-white/10 px-4 py-4">
+          <div className="border-t border-border px-4 py-4">
             <Link
-              className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+              className="flex items-center justify-center rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted"
               href="/portal/notifications"
               onClick={() => setIsOpen(false)}
             >

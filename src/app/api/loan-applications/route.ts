@@ -278,7 +278,7 @@ async function createGuarantorInviteFallback(
   const notificationResult = await sendMemberNotification(admin, {
     actionUrl: "/portal",
     contextLabel: "Guarantor invitation fallback notification",
-    emailSubject: "Guarantor request from Ifemelumma Cooperative Society",
+    emailSubject: "Guarantor request from Ifemelunma Cooperative Society",
     memberId: guarantorMemberId,
     message: `${applicantName} listed you as a guarantor for ${loanProductName}. Loan amount: ${formatNaira(
       loanAmount,

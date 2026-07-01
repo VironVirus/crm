@@ -1,4 +1,4 @@
--- Ifemelumma Cooperative Society
+-- Ifemelunma Cooperative Society
 -- Post-schema patch for scheduled jobs, dividend refresh, and reminder config fallback.
 -- Use this if the main full schema had already been run previously and a later rerun
 -- failed on the unavailable Vault extension.
