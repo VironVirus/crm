@@ -126,7 +126,8 @@ export async function POST(
   const notificationResult = await sendMemberNotification(admin, {
     actionUrl: "/portal/loans",
     contextLabel: "Loan rejection notification",
-    emailSubject: "Loan application update - Ifemelunma Cooperative Society",
+    emailSubject:
+      "Loan application update - Ifemelunma Multi-Purpose Co-operative Society",
     memberId: selectedApplication.member_id,
     message: `Your ${loanProduct?.name ?? "loan"} application was not approved. Reason: ${parsed.data.rejectionReason}. You can review the update in your member portal and submit a fresh application when ready.`,
     title: "Loan application not approved",

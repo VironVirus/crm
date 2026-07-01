@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   BarChart3,
-  Building2,
   Coins,
   Landmark,
   LayoutDashboard,
@@ -14,8 +13,10 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { COOPERATIVE_NAME } from "@/lib/brand";
 
 type AdminShellProps = {
   children: React.ReactNode;
@@ -60,13 +61,11 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
       <div className="mx-auto min-h-screen max-w-7xl px-3 pb-28 pt-3 sm:px-6 sm:pt-4 lg:px-8">
         <header className="sticky top-3 z-30 mb-5 rounded-[24px] border border-border bg-card/95 px-4 py-4 shadow-xl shadow-black/10 backdrop-blur dark:shadow-black/30 sm:top-4 sm:rounded-[30px] sm:px-5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-amber-300 text-slate-950 shadow-lg">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-['Outfit'] text-base font-semibold text-foreground sm:text-lg">
-                  Ifemelunma Cooperative Society
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <BrandMark size="sm" variant="symbol" />
+              <div className="min-w-0">
+                <p className="max-w-[210px] truncate font-['Outfit'] text-sm font-semibold text-foreground sm:max-w-none sm:text-lg">
+                  {COOPERATIVE_NAME}
                 </p>
                 <p className="text-xs uppercase tracking-[0.24em] text-amber-300">
                   Admin dashboard

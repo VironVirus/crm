@@ -14,6 +14,7 @@ import {
   formatPaymentTypeLabel,
   type PaymentType,
 } from "@/lib/payments";
+import { COOPERATIVE_NAME } from "@/lib/brand";
 
 function buildPortalUrl() {
   const appUrl = getAppUrl() ?? "http://localhost:3000";
@@ -108,7 +109,7 @@ async function sendEmailNotification({
     body: JSON.stringify({
       from,
       to: [email],
-      subject: `${paymentLabel} confirmed - Ifemelunma Cooperative Society`,
+      subject: `${paymentLabel} confirmed - ${COOPERATIVE_NAME}`,
       html: `
         <p>Hello ${fullName},</p>
         <p>Your <strong>${paymentLabel.toLowerCase()}</strong> has been confirmed.</p>
@@ -159,7 +160,7 @@ export async function sendMemberPaymentConfirmation({
 }) {
   const paymentLabel = formatPaymentTypeLabel(paymentType);
   const smsMessage = [
-    `${paymentLabel} confirmed by Ifemelunma Cooperative Society.`,
+    `${paymentLabel} confirmed by ${COOPERATIVE_NAME}.`,
     `Amount: ${formatPaymentAmount(amount)}.`,
     `Reference: ${reference}.`,
   ].join(" ");

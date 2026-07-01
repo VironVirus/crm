@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { COOPERATIVE_NAME } from "@/lib/brand";
 import {
   memberRegistrationSchema,
   type MemberRegistrationValues,
@@ -119,17 +121,14 @@ export function MemberRegistrationForm() {
   if (success) {
     return (
       <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
-        <CardHeader className="space-y-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-200">
-            <CheckCircle2 className="h-8 w-8" />
+        <CardHeader className="items-center space-y-4 text-center">
+          <BrandMark priority size="lg" variant="full" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-700 dark:text-emerald-200">
+            <CheckCircle2 className="h-6 w-6" />
           </div>
           <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
             Registration complete
           </CardTitle>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {success.fullName} can now sign in with the email and password used
-            here, then complete next of kin and KYC from the member profile.
-          </p>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5">
@@ -163,16 +162,11 @@ export function MemberRegistrationForm() {
 
   return (
     <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
-      <CardHeader className="space-y-5">
-        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-200">
-          <ShieldCheck className="h-4 w-4" />
-          Tier 1 onboarding
-        </div>
-        <div className="space-y-2">
-          <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
-            Create your member account
-          </CardTitle>
-        </div>
+      <CardHeader className="items-center space-y-4 text-center">
+        <BrandMark priority size="lg" variant="full" />
+        <CardTitle className="font-['Outfit'] text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+          Welcome to {COOPERATIVE_NAME}, please sign up.
+        </CardTitle>
       </CardHeader>
 
       <CardContent>

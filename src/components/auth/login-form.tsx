@@ -4,10 +4,12 @@ import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { COOPERATIVE_NAME } from "@/lib/brand";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { loginFormSchema } from "@/lib/validation/auth";
 
@@ -56,7 +58,11 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
   return (
     <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
-      <CardHeader className="space-y-3">
+      <CardHeader className="items-center space-y-4 text-center">
+        <BrandMark priority size="lg" variant="full" />
+        <CardTitle className="font-['Outfit'] text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+          Welcome to {COOPERATIVE_NAME}, please login.
+        </CardTitle>
         <div className="inline-flex w-fit rounded-full border border-border bg-secondary p-1 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           <button
             className="rounded-full bg-emerald-500/15 px-4 py-2 text-emerald-700 transition dark:text-emerald-200"
@@ -76,9 +82,6 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
             </Link>
           </Button>
         </div>
-        <CardTitle className="font-['Outfit'] text-3xl font-semibold tracking-tight">
-          Access your dashboard
-        </CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -127,14 +130,6 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
               </>
             )}
           </Button>
-
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-3 text-sm leading-6 text-muted-foreground">
-            Need a new member account?{" "}
-            <Link className="font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-200 dark:hover:text-emerald-100" href="/register">
-              Create your account
-            </Link>
-            .
-          </div>
         </form>
       </CardContent>
     </Card>

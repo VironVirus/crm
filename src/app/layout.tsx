@@ -3,15 +3,15 @@ import {
   ThemeProvider,
   themeBootScript,
 } from "@/components/theme/theme-provider";
+import { COOPERATIVE_NAME } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Ifemelunma Cooperative Society",
-    template: "%s | Ifemelunma Cooperative Society",
+    default: COOPERATIVE_NAME,
+    template: `%s | ${COOPERATIVE_NAME}`,
   },
-  description:
-    "Cooperative society management system for administrators and members.",
+  description: COOPERATIVE_NAME,
 };
 
 export default function RootLayout({

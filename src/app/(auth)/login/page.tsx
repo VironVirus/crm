@@ -16,16 +16,7 @@ export default function LoginPage({
       <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
         <ThemeToggle />
       </div>
-      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1fr_0.92fr]">
-        <section className="space-y-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-500 dark:text-amber-300">
-            Ifemelunma Cooperative Society
-          </p>
-          <h1 className="max-w-2xl font-['Outfit'] text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Access your dashboard.
-          </h1>
-        </section>
-
+      <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center justify-center">
         <LoginForm nextPath={nextPath.success ? nextPath.data : "/portal"} />
       </div>
     </main>
