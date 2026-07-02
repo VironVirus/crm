@@ -52,6 +52,14 @@ export function getFlutterwaveBaseUrl() {
   return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 }
 
+export function isFlutterwaveMockModeEnabled() {
+  const value =
+    readOptionalServerEnv(process.env.FLUTTERWAVE_MOCK_MODE) ??
+    readOptionalServerEnv(process.env.NEXT_PUBLIC_FLUTTERWAVE_MOCK_MODE);
+
+  return value === "1" || value?.toLowerCase() === "true";
+}
+
 export function getAfricasTalkingUsername() {
   return readOptionalServerEnv(process.env.AFRICASTALKING_USERNAME);
 }

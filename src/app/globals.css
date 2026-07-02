@@ -75,8 +75,8 @@
   --border-focus: rgba(16, 185, 129, 0.6);
   
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
   
   --primary: #059669; /* Slightly deeper emerald for light bg contrast */
   --primary-hover: #047857;
@@ -105,7 +105,7 @@
   --accent-hsl: 32 95% 44%;
   --accent-foreground: 210 40% 98%;
   --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
+  --muted-foreground: 215 20% 35%;
 }
 
 /* Base resets & layouts */
@@ -127,6 +127,7 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-family-sans);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -147,7 +148,7 @@ a {
 
 button, input, select, textarea {
   font-family: var(--font-family-sans);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 /* Global Custom Scrollbar */

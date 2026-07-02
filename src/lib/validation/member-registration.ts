@@ -111,6 +111,23 @@ function createFileSchema(fieldName: KycFieldName) {
   });
 }
 
+function createOptionalFileSchema(fieldName: KycFieldName) {
+  return z.any().optional().nullable().superRefine((value, ctx) => {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
+
+    const errorMessage = validateKycFile(fieldName, value);
+
+    if (errorMessage) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: errorMessage,
+      });
+    }
+  });
+}
+
 export const memberRegistrationSchema = z
   .object(registrationShape)
   .superRefine(validatePasswordConfirmation);
@@ -118,9 +135,19 @@ export const memberRegistrationSchema = z
 export const memberNextOfKinSchema = z.object(nextOfKinShape);
 
 export const memberKycSchema = z.object({
-  nationalId: createFileSchema("nationalId"),
-  passportPhoto: createFileSchema("passportPhoto"),
-  utilityBill: createFileSchema("utilityBill"),
+  nationalId: createOptionalFileSchema("nationalId"),
+  passportPhoto: createOptionalFileSchema("passportPhoto"),
+  utilityBill: createOptionalFileSchema("utilityBill"),
+}).superRefine((value, ctx) => {
+  if (value.nationalId || value.passportPhoto || value.utilityBill) {
+    return;
+  }
+
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message: "Choose at least one document to upload.",
+    path: ["nationalId"],
+  });
 });
 
 export type MemberRegistrationValues = z.infer<typeof memberRegistrationSchema>;

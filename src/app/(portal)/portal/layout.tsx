@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
+import { ProtectedSessionGuard } from "@/components/auth/protected-session-guard";
 import MemberShell from "@/components/shells/member-shell";
 import { getMemberTier } from "@/lib/member-tier";
+import { ensureMemberRecord } from "@/lib/members";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
@@ -23,6 +26,7 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const supabase = createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -31,22 +35,19 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
-  const [profileResult, memberResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("full_name, member_number")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("members")
-      .select(
-        "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-      )
-      .eq("id", user.id)
-      .maybeSingle(),
-  ]);
+  const profileResult = await supabase
+    .from("profiles")
+    .select("full_name, member_number")
+    .eq("id", user.id)
+    .maybeSingle();
   const profile = profileResult.data as ProfileRecord | null;
-  const member = memberResult.data as MemberRecord | null;
+  const ensuredMemberResult = await ensureMemberRecord(admin, {
+    memberId: user.id,
+    memberNumber: profile?.member_number ?? null,
+    select:
+      "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+  });
+  const member = ensuredMemberResult.data as MemberRecord | null;
 
   return (
     <MemberShell
@@ -54,9 +55,8 @@ export default async function PortalLayout({
       memberNumber={profile?.member_number ?? null}
       memberTier={getMemberTier(member)}
       userEmail={user.email}
-      userId={user.id}
     >
-      {children}
+      <ProtectedSessionGuard>{children}</ProtectedSessionGuard>
     </MemberShell>
   );
 }

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COOPERATIVE_NAME } from "@/lib/brand";
+import { activateProtectedSession } from "@/lib/session-state";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { loginFormSchema } from "@/lib/validation/auth";
 
@@ -50,6 +51,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           return;
         }
 
+        activateProtectedSession();
         router.replace(nextPath);
         router.refresh();
       })();

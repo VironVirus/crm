@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation";
 import MemberDashboardPageView from "@/features/portal/dashboard/page-view";
 import { getMemberTier } from "@/lib/member-tier";
+import { ensureMemberRecord } from "@/lib/members";
 import {
   parseMoney,
   type LoanStatus,
 } from "@/lib/loans";
-import {
-  type MemberPaymentLoanOption,
-  type MemberPaymentShareConfig,
-} from "@/lib/payments";
 import {
   type SavingsAccountOption,
   type SavingsAccountType,
@@ -22,6 +19,7 @@ import {
   type PortalDashboardRecentTransaction,
   type PortalDashboardShareSummary,
 } from "@/lib/portal-dashboard";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
@@ -112,11 +110,6 @@ type ShareTransactionRecord = {
   transaction_type: "purchase" | "transfer_in" | "transfer_out";
 };
 
-type ShareConfigRecord = {
-  minimum_shares: number;
-  share_value: number | string | null;
-};
-
 type LoanGuarantorRecord = {
   id: string;
 };
@@ -151,6 +144,7 @@ function getLoanProductName({
 
 export default async function MemberDashboardPage() {
   const supabase = createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -161,23 +155,14 @@ export default async function MemberDashboardPage() {
 
   const [
     profileResult,
-    memberResult,
     savingsAccountsResult,
     loansResult,
     guarantorRequestsResult,
     shareHoldingResult,
-    shareConfigResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, member_number")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("members")
-      .select(
-        "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-      )
       .eq("id", user.id)
       .maybeSingle(),
     supabase
@@ -204,12 +189,15 @@ export default async function MemberDashboardPage() {
       .select("total_shares, total_value")
       .eq("member_id", user.id)
       .maybeSingle(),
-    supabase
-      .from("share_config")
-      .select("share_value, minimum_shares")
-      .limit(1)
-      .maybeSingle(),
   ]);
+  const profile = profileResult.data as ProfileRecord | null;
+  const ensuredMemberResult = await ensureMemberRecord(admin, {
+    memberId: user.id,
+    memberNumber: profile?.member_number ?? null,
+    select:
+      "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+  });
+  const member = ensuredMemberResult.data as MemberRecord | null;
 
   const savingsAccounts =
     (savingsAccountsResult.data as SavingsAccountRecord[] | null) ?? [];
@@ -401,33 +389,11 @@ export default async function MemberDashboardPage() {
       })()
     : null;
 
-  const paymentLoanOptions = activeLoans.map(
-    (loan) =>
-      ({
-        id: loan.id,
-        monthlyRepayment: parseMoney(loan.monthly_repayment),
-        outstandingBalance: parseMoney(loan.outstanding_balance),
-        productName: getLoanProductName({
-          applicationMap,
-          loan,
-          productMap,
-        }),
-      }) satisfies MemberPaymentLoanOption,
-  );
-
   const shareHolding = shareHoldingResult.data as ShareHoldingRecord | null;
   const shares: PortalDashboardShareSummary = {
     totalShares: shareHolding?.total_shares ?? 0,
     totalValue: parseMoney(shareHolding?.total_value),
   };
-
-  const shareConfigRecord = shareConfigResult.data as ShareConfigRecord | null;
-  const shareConfig: MemberPaymentShareConfig | null = shareConfigRecord
-    ? {
-        minimumShares: shareConfigRecord.minimum_shares,
-        shareValue: parseMoney(shareConfigRecord.share_value),
-      }
-    : null;
 
   const loanTransactions =
     (loanTransactionsResult.data as LoanTransactionRecord[] | null) ?? [];
@@ -494,18 +460,15 @@ export default async function MemberDashboardPage() {
     )
     .slice(0, 5);
 
-  const profile = profileResult.data as ProfileRecord | null;
-  const member = memberResult.data as MemberRecord | null;
   const guarantorRequests =
     (guarantorRequestsResult.data as LoanGuarantorRecord[] | null) ?? [];
   const errors = [
     profileResult.error?.message,
-    memberResult.error?.message,
+    ensuredMemberResult.error?.message,
     savingsAccountsResult.error?.message,
     loansResult.error?.message,
     guarantorRequestsResult.error?.message,
     shareHoldingResult.error?.message,
-    shareConfigResult.error?.message,
     savingsTransactionsResult.error?.message,
     loanSchedulesResult.error?.message,
     loanApplicationsResult.error?.message,
@@ -518,28 +481,13 @@ export default async function MemberDashboardPage() {
     <MemberDashboardPageView
       activeLoan={activeLoan}
       dataError={errors.length > 0 ? errors.join(" ") : null}
-      memberId={user.id}
       memberName={profile?.full_name ?? user.email ?? "Member"}
       memberNumber={profile?.member_number ?? null}
       memberTier={getMemberTier(member)}
-      profileCompletion={{
-        kycComplete: Boolean(
-          member?.national_id_path &&
-            member?.passport_photo_path &&
-            member?.utility_bill_path,
-        ),
-        nextOfKinComplete: Boolean(
-          member?.next_of_kin_name &&
-            member?.next_of_kin_phone &&
-            member?.next_of_kin_relationship,
-        ),
-      }}
-      paymentLoanOptions={paymentLoanOptions}
       pendingGuarantorCount={guarantorRequests.length}
       recentTransactions={recentTransactions}
       savingsBalance={savingsBalance}
       savingsTrend={savingsTrend}
-      shareConfig={shareConfig}
       shares={shares}
     />
   );

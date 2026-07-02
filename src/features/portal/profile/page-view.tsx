@@ -25,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { compressImageToWebp } from "@/lib/image-compression";
 import {
   getMemberTierMeta,
-  getTierUpgradeLabel,
   type MemberTier,
 } from "@/lib/member-tier";
 import {
@@ -55,6 +54,7 @@ type MemberProfilePageViewProps = {
     nextOfKinRelationship: string;
   };
   occupation: string;
+  passportPhotoUrl: string | null;
   phone: string | null;
   tier: MemberTier;
 };
@@ -100,6 +100,7 @@ export default function MemberProfilePageView({
   memberNumber,
   nextOfKin,
   occupation,
+  passportPhotoUrl,
   phone,
   tier,
 }: MemberProfilePageViewProps) {
@@ -111,6 +112,13 @@ export default function MemberProfilePageView({
   const [kycInputKey, setKycInputKey] = useState(0);
   const [isPreparingKyc, setIsPreparingKyc] = useState(false);
   const [isRefreshing, startTransition] = useTransition();
+  const hasNextOfKinComplete = Boolean(
+    nextOfKin.nextOfKinName &&
+      nextOfKin.nextOfKinPhone &&
+      nextOfKin.nextOfKinRelationship,
+  );
+  const hasKycComplete =
+    kycStatus.nationalId && kycStatus.passportPhoto && kycStatus.utilityBill;
   const tierMeta = getMemberTierMeta(tier);
 
   const nextOfKinForm = useForm<MemberNextOfKinValues>({
@@ -256,25 +264,38 @@ export default function MemberProfilePageView({
       ) : null}
 
       <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <Badge className="w-fit">{tierMeta.label}</Badge>
-            <div>
-              <h2 className="font-['Outfit'] text-3xl font-semibold text-foreground">
-                {memberName}
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {memberNumber ?? "Member number pending"}
-              </p>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
+            {passportPhotoUrl ? (
+              <img
+                alt={`${memberName} passport`}
+                className="h-20 w-20 rounded-3xl border border-border object-cover shadow-lg shadow-black/10 dark:shadow-black/30"
+                src={passportPhotoUrl}
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-border bg-secondary text-muted-foreground">
+                <UserRound className="h-9 w-9" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Badge className="w-fit">{tierMeta.label}</Badge>
+              <div>
+                <h2 className="font-['Outfit'] text-2xl font-semibold text-foreground sm:text-3xl">
+                  {memberName}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {memberNumber ?? "Member number pending"}
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="rounded-[28px] border border-emerald-400/15 bg-emerald-500/10 px-5 py-4">
-            <p className="text-xs uppercase tracking-[0.28em] text-emerald-200">
-              {getTierUpgradeLabel(tier)}
+            <p className="text-xs uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-100">
+              Current tier
             </p>
             <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
-              {tierMeta.medal} member
+              {tierMeta.label} · {tierMeta.medal}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{tierMeta.nextStep}</p>
           </div>
@@ -283,16 +304,12 @@ export default function MemberProfilePageView({
 
       <section className="grid gap-4 md:grid-cols-3">
         <StatusPill
-          complete={Boolean(
-            nextOfKin.nextOfKinName &&
-              nextOfKin.nextOfKinPhone &&
-              nextOfKin.nextOfKinRelationship,
-          )}
+          complete={hasNextOfKinComplete}
           label="Next of kin"
         />
         <StatusPill complete={kycStatus.nationalId} label="National ID" />
         <StatusPill
-          complete={kycStatus.passportPhoto && kycStatus.utilityBill}
+          complete={hasKycComplete}
           label="KYC uploads"
         />
       </section>
@@ -308,6 +325,20 @@ export default function MemberProfilePageView({
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                Full name
+              </p>
+              <p className="mt-2 text-sm text-foreground">{memberName}</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                Member number
+              </p>
+              <p className="mt-2 text-sm text-foreground">
+                {memberNumber ?? "Pending"}
+              </p>
+            </div>
             <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
               <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 Email
@@ -345,18 +376,29 @@ export default function MemberProfilePageView({
           <CardHeader>
             <Badge className="w-fit">Tier progress</Badge>
             <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-              Membership tier
+              Access status
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
-              Tier 1: savings, payments, statements, and notifications.
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-4 text-sm">
+              <span className="text-foreground">Savings and payments</span>
+              <Badge variant="secondary">Enabled</Badge>
             </div>
-            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
-              Tier 2: everything in Tier 1 plus governance and voting access.
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-4 text-sm">
+              <span className="text-foreground">Voting access</span>
+              <Badge variant={tierMeta.canVote ? "secondary" : "outline"}>
+                {tierMeta.canVote ? "Enabled" : "Locked"}
+              </Badge>
             </div>
-            <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
-              Tier 3: full portal access, including loans and shares.
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-4 text-sm">
+              <span className="text-foreground">Loans and shares</span>
+              <Badge
+                variant={tierMeta.canAccessLoans && tierMeta.canAccessShares ? "secondary" : "outline"}
+              >
+                {tierMeta.canAccessLoans && tierMeta.canAccessShares
+                  ? "Enabled"
+                  : "Locked"}
+              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -366,183 +408,227 @@ export default function MemberProfilePageView({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <UserRound className="h-5 w-5 text-amber-200" />
+              <UserRound className="h-5 w-5 text-amber-700 dark:text-amber-200" />
               <div>
                 <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-                  Add next of kin
+                  Next of kin
                 </CardTitle>
                 <CardDescription>Tier 2</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <form className="space-y-5" onSubmit={saveNextOfKin}>
-              <div className="space-y-2">
-                <Label htmlFor="nextOfKinName">Next of kin name</Label>
-                <Input
-                  id="nextOfKinName"
-                  placeholder="Full name"
-                  {...nextOfKinForm.register("nextOfKinName")}
-                />
-                <FieldMessage
-                  message={nextOfKinForm.formState.errors.nextOfKinName?.message}
-                />
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="nextOfKinPhone">Phone number</Label>
-                  <Input
-                    id="nextOfKinPhone"
-                    placeholder="Phone number"
-                    type="tel"
-                    {...nextOfKinForm.register("nextOfKinPhone")}
-                  />
-                  <FieldMessage
-                    message={nextOfKinForm.formState.errors.nextOfKinPhone?.message}
-                  />
+            {hasNextOfKinComplete ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-secondary px-4 py-4 sm:col-span-2">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                    Next of kin name
+                  </p>
+                  <p className="mt-2 text-sm text-foreground">
+                    {nextOfKin.nextOfKinName}
+                  </p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="nextOfKinRelationship">Relationship</Label>
-                  <Input
-                    id="nextOfKinRelationship"
-                    placeholder="Relationship"
-                    {...nextOfKinForm.register("nextOfKinRelationship")}
-                  />
-                  <FieldMessage
-                    message={
-                      nextOfKinForm.formState.errors.nextOfKinRelationship?.message
-                    }
-                  />
+                <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                    Phone number
+                  </p>
+                  <p className="mt-2 text-sm text-foreground">
+                    {nextOfKin.nextOfKinPhone}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                    Relationship
+                  </p>
+                  <p className="mt-2 text-sm text-foreground">
+                    {nextOfKin.nextOfKinRelationship}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100 sm:col-span-2">
+                  Your next of kin details are already saved.
                 </div>
               </div>
-
-              {profileError ? (
-                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
-                  {profileError}
+            ) : (
+              <form className="space-y-5" onSubmit={saveNextOfKin}>
+                <div className="space-y-2">
+                  <Label htmlFor="nextOfKinName">Next of kin name</Label>
+                  <Input
+                    id="nextOfKinName"
+                    placeholder="Full name"
+                    {...nextOfKinForm.register("nextOfKinName")}
+                  />
+                  <FieldMessage
+                    message={nextOfKinForm.formState.errors.nextOfKinName?.message}
+                  />
                 </div>
-              ) : null}
 
-              {profileMessage ? (
-                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
-                  {profileMessage}
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="nextOfKinPhone">Phone number</Label>
+                    <Input
+                      id="nextOfKinPhone"
+                      placeholder="Phone number"
+                      type="tel"
+                      {...nextOfKinForm.register("nextOfKinPhone")}
+                    />
+                    <FieldMessage
+                      message={nextOfKinForm.formState.errors.nextOfKinPhone?.message}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nextOfKinRelationship">Relationship</Label>
+                    <Input
+                      id="nextOfKinRelationship"
+                      placeholder="Relationship"
+                      {...nextOfKinForm.register("nextOfKinRelationship")}
+                    />
+                    <FieldMessage
+                      message={
+                        nextOfKinForm.formState.errors.nextOfKinRelationship?.message
+                      }
+                    />
+                  </div>
                 </div>
-              ) : null}
 
-              <Button
-                disabled={nextOfKinForm.formState.isSubmitting || isRefreshing}
-                type="submit"
-              >
-                {nextOfKinForm.formState.isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save next of kin"
-                )}
-              </Button>
-            </form>
+                {profileError ? (
+                  <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
+                    {profileError}
+                  </div>
+                ) : null}
+
+                {profileMessage ? (
+                  <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
+                    {profileMessage}
+                  </div>
+                ) : null}
+
+                <Button
+                  disabled={nextOfKinForm.formState.isSubmitting || isRefreshing}
+                  type="submit"
+                >
+                  {nextOfKinForm.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save next of kin"
+                  )}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <UploadCloud className="h-5 w-5 text-emerald-200" />
+              <UploadCloud className="h-5 w-5 text-emerald-700 dark:text-emerald-200" />
               <div>
                 <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-                  Upload KYC
+                  KYC documents
                 </CardTitle>
                 <CardDescription>Tier 3 · 1MB maximum per file</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <form className="space-y-5" onSubmit={uploadKyc}>
-              <div className="space-y-2">
-                <Label htmlFor="nationalId">National ID</Label>
-                <Input
-                  id="nationalId"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  key={`national-id-${kycInputKey}`}
-                  type="file"
-                  onChange={(event) => void handleKycFileChange("nationalId", event)}
-                />
-                <FieldMessage message={kycForm.formState.errors.nationalId?.message} />
-              </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <StatusPill complete={kycStatus.nationalId} label="National ID" />
+              <StatusPill
+                complete={kycStatus.passportPhoto}
+                label="Passport photo"
+              />
+              <StatusPill complete={kycStatus.utilityBill} label="Utility bill" />
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="passportPhoto">Passport photo</Label>
-                <Input
-                  id="passportPhoto"
-                  accept=".jpg,.jpeg,.png,.webp"
-                  key={`passport-photo-${kycInputKey}`}
-                  type="file"
-                  onChange={(event) =>
-                    void handleKycFileChange("passportPhoto", event)
+            {hasKycComplete ? (
+              <div className="mt-5 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-700 dark:text-emerald-100">
+                Your KYC documents are already complete.
+              </div>
+            ) : (
+              <form className="mt-5 space-y-5" onSubmit={uploadKyc}>
+                {!kycStatus.nationalId ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="nationalId">National ID</Label>
+                    <Input
+                      id="nationalId"
+                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      key={`national-id-${kycInputKey}`}
+                      type="file"
+                      onChange={(event) => void handleKycFileChange("nationalId", event)}
+                    />
+                    <FieldMessage message={kycForm.formState.errors.nationalId?.message} />
+                  </div>
+                ) : null}
+
+                {!kycStatus.passportPhoto ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="passportPhoto">Passport photo</Label>
+                    <Input
+                      id="passportPhoto"
+                      accept=".jpg,.jpeg,.png,.webp"
+                      key={`passport-photo-${kycInputKey}`}
+                      type="file"
+                      onChange={(event) =>
+                        void handleKycFileChange("passportPhoto", event)
+                      }
+                    />
+                    <FieldMessage
+                      message={kycForm.formState.errors.passportPhoto?.message}
+                    />
+                  </div>
+                ) : null}
+
+                {!kycStatus.utilityBill ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="utilityBill">Utility bill</Label>
+                    <Input
+                      id="utilityBill"
+                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      key={`utility-bill-${kycInputKey}`}
+                      type="file"
+                      onChange={(event) => void handleKycFileChange("utilityBill", event)}
+                    />
+                    <FieldMessage message={kycForm.formState.errors.utilityBill?.message} />
+                  </div>
+                ) : null}
+
+                {kycError ? (
+                  <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
+                    {kycError}
+                  </div>
+                ) : null}
+
+                {kycMessage ? (
+                  <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
+                    {kycMessage}
+                  </div>
+                ) : null}
+
+                <Button
+                  disabled={
+                    kycForm.formState.isSubmitting ||
+                    isPreparingKyc ||
+                    isRefreshing
                   }
-                />
-                <FieldMessage
-                  message={kycForm.formState.errors.passportPhoto?.message}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="utilityBill">Utility bill</Label>
-                <Input
-                  id="utilityBill"
-                  accept=".jpg,.jpeg,.png,.webp,.pdf"
-                  key={`utility-bill-${kycInputKey}`}
-                  type="file"
-                  onChange={(event) => void handleKycFileChange("utilityBill", event)}
-                />
-                <FieldMessage message={kycForm.formState.errors.utilityBill?.message} />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <StatusPill complete={kycStatus.nationalId} label="National ID" />
-                <StatusPill
-                  complete={kycStatus.passportPhoto}
-                  label="Passport photo"
-                />
-                <StatusPill complete={kycStatus.utilityBill} label="Utility bill" />
-              </div>
-
-              {kycError ? (
-                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
-                  {kycError}
-                </div>
-              ) : null}
-
-              {kycMessage ? (
-                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
-                  {kycMessage}
-                </div>
-              ) : null}
-
-              <Button
-                disabled={
-                  kycForm.formState.isSubmitting ||
-                  isPreparingKyc ||
-                  isRefreshing
-                }
-                type="submit"
-              >
-                {kycForm.formState.isSubmitting || isPreparingKyc ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isPreparingKyc ? "Preparing..." : "Uploading..."}
-                  </>
-                ) : (
-                  <>
-                    <BadgeCheck className="mr-2 h-4 w-4" />
-                    Upload KYC
-                  </>
-                )}
-              </Button>
-            </form>
+                  type="submit"
+                >
+                  {kycForm.formState.isSubmitting || isPreparingKyc ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isPreparingKyc ? "Preparing..." : "Uploading..."}
+                    </>
+                  ) : (
+                    <>
+                      <BadgeCheck className="mr-2 h-4 w-4" />
+                      Upload KYC
+                    </>
+                  )}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </section>

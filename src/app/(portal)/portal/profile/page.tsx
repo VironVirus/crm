@@ -1,7 +1,16 @@
 import { redirect } from "next/navigation";
 import MemberProfilePageView from "@/features/portal/profile/page-view";
 import { getMemberTier } from "@/lib/member-tier";
+import {
+  ensureMemberRecord,
+  MEMBER_PLACEHOLDER_ADDRESS,
+  MEMBER_PLACEHOLDER_OCCUPATION,
+  normalizeMemberDate,
+  normalizeMemberText,
+} from "@/lib/members";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { KYC_STORAGE_BUCKET } from "@/lib/validation/member-registration";
 
 type ProfileRecord = {
   email: string;
@@ -24,6 +33,7 @@ type MemberRecord = {
 
 export default async function PortalProfilePage() {
   const supabase = createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -32,23 +42,26 @@ export default async function PortalProfilePage() {
     redirect("/login?next=/portal/profile");
   }
 
-  const [profileResult, memberResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("email, full_name, member_number, phone")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("members")
-      .select(
-        "address, date_of_birth, occupation, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-      )
-      .eq("id", user.id)
-      .maybeSingle(),
-  ]);
-
+  const profileResult = await supabase
+    .from("profiles")
+    .select("email, full_name, member_number, phone")
+    .eq("id", user.id)
+    .maybeSingle();
   const profile = profileResult.data as ProfileRecord | null;
+  const memberResult = await ensureMemberRecord(admin, {
+    memberId: user.id,
+    memberNumber: profile?.member_number ?? null,
+    select:
+      "address, date_of_birth, occupation, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+  });
   const member = memberResult.data as MemberRecord | null;
+  const passportPhotoUrl = member?.passport_photo_path
+    ? (
+        await admin.storage
+          .from(KYC_STORAGE_BUCKET)
+          .createSignedUrl(member.passport_photo_path, 60 * 60)
+      ).data?.signedUrl ?? null
+    : null;
   const tier = getMemberTier(member);
   const errors = [profileResult.error?.message, memberResult.error?.message].filter(
     Boolean,
@@ -56,9 +69,9 @@ export default async function PortalProfilePage() {
 
   return (
     <MemberProfilePageView
-      address={member?.address ?? ""}
+      address={normalizeMemberText(member?.address, MEMBER_PLACEHOLDER_ADDRESS)}
       dataError={errors.length > 0 ? errors.join(" ") : null}
-      dateOfBirth={member?.date_of_birth ?? ""}
+      dateOfBirth={normalizeMemberDate(member?.date_of_birth)}
       email={profile?.email ?? user.email ?? ""}
       kycStatus={{
         nationalId: Boolean(member?.national_id_path),
@@ -72,7 +85,11 @@ export default async function PortalProfilePage() {
         nextOfKinPhone: member?.next_of_kin_phone ?? "",
         nextOfKinRelationship: member?.next_of_kin_relationship ?? "",
       }}
-      occupation={member?.occupation ?? ""}
+      occupation={normalizeMemberText(
+        member?.occupation,
+        MEMBER_PLACEHOLDER_OCCUPATION,
+      )}
+      passportPhotoUrl={passportPhotoUrl}
       phone={profile?.phone ?? null}
       tier={tier}
     />

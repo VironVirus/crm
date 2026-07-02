@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getAppUrl, isFlutterwaveMockModeEnabled } from "@/lib/env/server";
+import { createMockFlutterwaveSessionToken } from "@/lib/flutterwave/mock";
 import {
   createFlutterwavePaymentLink,
   FlutterwaveGatewayError,
@@ -15,6 +17,7 @@ import {
   roundCurrency,
 } from "@/lib/payments";
 import { getMemberTier } from "@/lib/member-tier";
+import { ensureMemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { formatAccountTypeLabel } from "@/lib/savings";
@@ -116,21 +119,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const [{ data: profile, error: profileError }, { data: member, error: memberError }] =
-    await Promise.all([
-      admin
-        .from("profiles")
-        .select("full_name, email, phone, member_number, status")
-        .eq("id", user.id)
-        .maybeSingle(),
-      admin
-        .from("members")
-        .select(
-          "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-        )
-        .eq("id", user.id)
-        .maybeSingle(),
-    ]);
+  const profileResult = await admin
+    .from("profiles")
+    .select("full_name, email, phone, member_number, status")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profile = profileResult.data as ProfileRecord | null;
+  const profileError = profileResult.error;
+  const memberResult = await ensureMemberRecord(admin, {
+    memberId: user.id,
+    memberNumber: profile?.member_number ?? null,
+    select:
+      "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+  });
+  const member = memberResult.data as MemberRecord | null;
+  const memberError = memberResult.error;
 
   if (profileError || !profile) {
     return jsonError("Your member profile could not be loaded.", 404);
@@ -143,8 +146,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const profileRecord = profile as ProfileRecord;
-  const memberRecord = member as MemberRecord;
+  const profileRecord = profile;
+  const memberRecord = member;
 
   if (profileRecord.status !== "active") {
     return jsonError(
@@ -243,21 +246,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { paymentLink } = await createFlutterwavePaymentLink({
-      amount,
-      customer: {
-        email: profileRecord.email,
-        name: profileRecord.full_name,
-        phonenumber: profileRecord.phone,
-      },
-      customizations: {
+    let paymentLink: string;
+
+    if (isFlutterwaveMockModeEnabled()) {
+      const mockSessionToken = createMockFlutterwaveSessionToken({
+        amount,
         description,
-        title: "Ifemelunma Multi-Purpose Co-operative Society",
-      },
-      meta,
-      redirect_url: getFlutterwaveRedirectUrl(txRef),
-      tx_ref: txRef,
-    });
+        memberId: user.id,
+        memberName: profileRecord.full_name,
+        memberNumber: profileRecord.member_number,
+        metadata: meta,
+        paymentType: parsed.data.payment_type,
+        txRef,
+      });
+      const appUrl = (getAppUrl() ?? "http://localhost:3000").replace(/\/$/, "");
+
+      paymentLink = `${appUrl}/portal/payments/mock?session=${encodeURIComponent(mockSessionToken)}`;
+    } else {
+      const flutterwaveCheckout = await createFlutterwavePaymentLink({
+        amount,
+        customer: {
+          email: profileRecord.email,
+          name: profileRecord.full_name,
+          phonenumber: profileRecord.phone,
+        },
+        customizations: {
+          description,
+          title: "Ifemelunma Multi-Purpose Co-operative Society",
+        },
+        meta,
+        redirect_url: getFlutterwaveRedirectUrl(txRef),
+        tx_ref: txRef,
+      });
+
+      paymentLink = flutterwaveCheckout.paymentLink;
+    }
 
     return NextResponse.json({
       paymentLink,

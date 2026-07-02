@@ -64,6 +64,7 @@ function formatPaymentTypeSummary(paymentType: PaymentType) {
 
 export function MakePaymentDialog({
   activeLoans,
+  demoMode = false,
   memberId,
   memberName,
   memberNumber,
@@ -71,6 +72,7 @@ export function MakePaymentDialog({
   shareConfig,
 }: {
   activeLoans: MemberPaymentLoanOption[];
+  demoMode?: boolean;
   memberId: string;
   memberName: string;
   memberNumber: string | null;
@@ -233,11 +235,16 @@ export function MakePaymentDialog({
             <div className="rounded-3xl border border-emerald-400/15 bg-emerald-500/10 p-4">
               <p className="font-medium text-foreground">{memberName}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {memberNumber ?? "Member number pending"} · Secure online payment
+                {memberNumber ?? "Member number pending"} · {demoMode ? "Demo checkout" : "Secure online payment"}
               </p>
               {!canAccessTierThreePayments ? (
                 <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-100/90">
                   Tier 3 unlocks loan repayments and share purchases.
+                </p>
+              ) : null}
+              {demoMode ? (
+                <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-100/90">
+                  Mock Flutterwave mode is on. Completing this checkout will post a demo payment inside the app.
                 </p>
               ) : null}
             </div>

@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 import { getMemberTier } from "@/lib/member-tier";
+import { ensureMemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
@@ -14,6 +15,19 @@ import {
 export const runtime = "nodejs";
 
 const KYC_FIELD_NAMES = Object.keys(KYC_FIELD_CONFIG) as KycFieldName[];
+
+type MemberKycRecord = {
+  address: string;
+  date_of_birth: string;
+  national_id_path: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
+  next_of_kin_relationship: string | null;
+  occupation: string;
+  onboarding_status: "pending" | "registered";
+  passport_photo_path: string | null;
+  utility_bill_path: string | null;
+};
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ message }, { status });
@@ -89,13 +103,19 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createSupabaseAdminClient();
-  const { data: currentMember, error: currentMemberError } = await admin
-    .from("members")
-    .select(
-      "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-    )
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("member_number")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
+  const { data: currentMemberData, error: currentMemberError } =
+    await ensureMemberRecord(admin, {
+      memberId: user.id,
+      memberNumber: profile?.member_number ?? null,
+      select:
+        "address, date_of_birth, occupation, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+    });
+  const currentMember = currentMemberData as MemberKycRecord | null;
 
   if (currentMemberError || !currentMember) {
     return jsonError("Your member profile could not be loaded.", 404);
@@ -105,21 +125,36 @@ export async function POST(request: NextRequest) {
 
   try {
     for (const fieldName of KYC_FIELD_NAMES) {
+      const file = parsed.data[fieldName];
+
+      if (!file) {
+        continue;
+      }
+
       uploadedPaths[fieldName] = await uploadKycDocument(
         user.id,
         fieldName,
-        parsed.data[fieldName] as File,
+        file as File,
       );
     }
 
     const { data, error } = await admin
       .from("members")
-      .update({
-        national_id_path: uploadedPaths.nationalId ?? null,
-        passport_photo_path: uploadedPaths.passportPhoto ?? null,
-        utility_bill_path: uploadedPaths.utilityBill ?? null,
+      .upsert({
+        id: user.id,
+        address: currentMember.address,
+        date_of_birth: currentMember.date_of_birth,
+        occupation: currentMember.occupation,
+        onboarding_status: currentMember.onboarding_status,
+        national_id_path:
+          uploadedPaths.nationalId ?? currentMember.national_id_path ?? null,
+        passport_photo_path:
+          uploadedPaths.passportPhoto ?? currentMember.passport_photo_path ?? null,
+        utility_bill_path:
+          uploadedPaths.utilityBill ?? currentMember.utility_bill_path ?? null,
+      }, {
+        onConflict: "id",
       })
-      .eq("id", user.id)
       .select(
         "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
       )
@@ -130,9 +165,9 @@ export async function POST(request: NextRequest) {
     }
 
     await removeFiles([
-      currentMember.national_id_path,
-      currentMember.passport_photo_path,
-      currentMember.utility_bill_path,
+      uploadedPaths.nationalId ? currentMember.national_id_path : null,
+      uploadedPaths.passportPhoto ? currentMember.passport_photo_path : null,
+      uploadedPaths.utilityBill ? currentMember.utility_bill_path : null,
     ]);
 
     revalidatePath("/portal");

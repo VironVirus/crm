@@ -1,4 +1,4 @@
--- Ifemelunma Cooperative Society
+-- Ifemelumma Cooperative Society
 -- Post-schema patch for scheduled jobs, dividend refresh, and reminder config fallback.
 -- Use this if the main full schema had already been run previously and a later rerun
 -- failed on the unavailable Vault extension.
@@ -517,8 +517,8 @@ execute function public.release_loan_guarantors_for_completed_loan();
 -- Replace the values below with your real project URL and anon or publishable key.
 insert into private.app_runtime_config (config_key, config_value, description)
 values
-  ('project_url', 'https://YOUR_PROJECT_REF.supabase.co', 'Supabase project URL used by cron-triggered edge functions'),
-  ('publishable_key', 'YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY', 'Publishable key used to authorize cron-triggered edge functions')
+  ('project_url', 'https://rztmnfginaxtpcamdvsj.supabase.co', 'Supabase project URL used by cron-triggered edge functions'),
+  ('publishable_key', 'sb_publishable_VrdyzJhQyzDc5roEF64wcA_xq43vWeR', 'Publishable key used to authorize cron-triggered edge functions')
 on conflict (config_key) do update
 set
   config_value = excluded.config_value,

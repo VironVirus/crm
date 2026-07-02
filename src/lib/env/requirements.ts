@@ -6,6 +6,7 @@ export const REQUIRED_APP_ENVIRONMENT_VARIABLES = [
 
 export const RECOMMENDED_APP_ENVIRONMENT_VARIABLES = [
   "APP_URL",
+  "FLUTTERWAVE_MOCK_MODE",
   "FLUTTERWAVE_PUBLIC_KEY",
   "FLUTTERWAVE_SECRET_KEY",
   "FLUTTERWAVE_SECRET_HASH",
@@ -32,6 +33,8 @@ const ENVIRONMENT_VARIABLE_DESCRIPTIONS: Record<string, string> = {
   AFRICASTALKING_SENDER_ID: "Approved sender ID for outbound SMS messages.",
   AFRICASTALKING_USERNAME: "Africa's Talking username for the messaging account.",
   APP_URL: "Public base URL for redirects, webhooks, and generated links.",
+  FLUTTERWAVE_MOCK_MODE:
+    "Set to true to use the built-in demo Flutterwave checkout instead of the live gateway.",
   FLUTTERWAVE_PUBLIC_KEY: "Flutterwave public key used for payment initialization.",
   FLUTTERWAVE_SECRET_HASH: "Secret hash used to verify Flutterwave webhooks.",
   FLUTTERWAVE_SECRET_KEY: "Flutterwave secret key used for payment verification.",

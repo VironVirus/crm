@@ -3,6 +3,7 @@
 import { ReactNode, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, LogOut } from "lucide-react";
+import { clearProtectedSession } from "@/lib/session-state";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export function SignOutButton({
@@ -25,6 +26,7 @@ export function SignOutButton({
         startTransition(() => {
           void (async () => {
             const supabase = createBrowserSupabaseClient();
+            clearProtectedSession();
             await supabase.auth.signOut();
             router.replace("/login");
             router.refresh();

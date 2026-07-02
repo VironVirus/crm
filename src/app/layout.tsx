@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   ThemeProvider,
   themeBootScript,
@@ -12,6 +12,13 @@ export const metadata: Metadata = {
     template: `%s | ${COOPERATIVE_NAME}`,
   },
   description: COOPERATIVE_NAME,
+};
+
+export const viewport: Viewport = {
+  colorScheme: "dark light",
+  initialScale: 1,
+  viewportFit: "cover",
+  width: "device-width",
 };
 
 export default function RootLayout({

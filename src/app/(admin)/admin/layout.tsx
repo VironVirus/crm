@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ProtectedSessionGuard } from "@/components/auth/protected-session-guard";
 import AdminShell from "@/components/shells/admin-shell";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -26,5 +27,9 @@ export default async function AdminLayout({
     redirect("/portal");
   }
 
-  return <AdminShell userEmail={user.email}>{children}</AdminShell>;
+  return (
+    <AdminShell userEmail={user.email}>
+      <ProtectedSessionGuard>{children}</ProtectedSessionGuard>
+    </AdminShell>
+  );
 }
