@@ -163,12 +163,9 @@ export async function POST(request: NextRequest) {
   );
 
   if (rateLimitError) {
-    if (
-      isMissingPaymentRateLimitInfrastructure(rateLimitError) &&
-      isFlutterwaveMockModeEnabled()
-    ) {
+    if (isFlutterwaveMockModeEnabled()) {
       console.warn(
-        "Skipping payment rate limit because the database rate limit setup is missing in mock mode.",
+        "Skipping payment rate limit because the verification step failed in mock mode.",
         rateLimitError,
       );
     } else if (isMissingPaymentRateLimitInfrastructure(rateLimitError)) {
