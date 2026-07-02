@@ -50,6 +50,25 @@ type PaymentRateLimitResult = {
   reset_at?: string;
 };
 
+function isMissingPaymentRateLimitInfrastructure(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  const message = error?.message?.toLowerCase() ?? "";
+  const code = error?.code ?? "";
+
+  return (
+    code === "PGRST202" ||
+    code === "42883" ||
+    code === "42P01" ||
+    message.includes("check_payment_initiation_rate_limit") ||
+    message.includes("payment_initiation_rate_limits") ||
+    message.includes("schema cache") ||
+    message.includes("current_user_can_manage_financial_records") ||
+    message.includes("does not exist")
+  );
+}
+
 function jsonError(message: string, status: number) {
   return NextResponse.json({ message }, { status });
 }
@@ -90,35 +109,6 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createSupabaseAdminClient();
-  const { data: rateLimitData, error: rateLimitError } = await admin.rpc(
-    "check_payment_initiation_rate_limit",
-    {
-      p_limit: 5,
-      p_member_id: user.id,
-      p_window_seconds: 60,
-    },
-  );
-
-  if (rateLimitError) {
-    return jsonError(
-      "Unable to verify the payment rate limit right now.",
-      500,
-    );
-  }
-
-  const rateLimit = rateLimitData as PaymentRateLimitResult | null;
-
-  if (rateLimit?.allowed === false) {
-    return NextResponse.json(
-      {
-        message:
-          "Too many payment attempts. Please wait a minute before trying again.",
-        resetAt: rateLimit.reset_at ?? null,
-      },
-      { status: 429 },
-    );
-  }
-
   const profileResult = await admin
     .from("profiles")
     .select("full_name, email, phone, member_number, status")
@@ -160,6 +150,50 @@ export async function POST(request: NextRequest) {
     return jsonError(
       "Finish your cooperative onboarding before making payments online.",
       409,
+    );
+  }
+
+  const { data: rateLimitData, error: rateLimitError } = await admin.rpc(
+    "check_payment_initiation_rate_limit",
+    {
+      p_limit: 5,
+      p_member_id: user.id,
+      p_window_seconds: 60,
+    },
+  );
+
+  if (rateLimitError) {
+    if (
+      isMissingPaymentRateLimitInfrastructure(rateLimitError) &&
+      isFlutterwaveMockModeEnabled()
+    ) {
+      console.warn(
+        "Skipping payment rate limit because the database rate limit setup is missing in mock mode.",
+        rateLimitError,
+      );
+    } else if (isMissingPaymentRateLimitInfrastructure(rateLimitError)) {
+      return jsonError(
+        "Payment security setup is incomplete. Run supabase/sql/payment_rate_limit_setup_patch.sql in the Supabase SQL editor, then try again.",
+        500,
+      );
+    } else {
+      return jsonError(
+        "Unable to verify the payment rate limit right now.",
+        500,
+      );
+    }
+  }
+
+  const rateLimit = rateLimitData as PaymentRateLimitResult | null;
+
+  if (rateLimit?.allowed === false) {
+    return NextResponse.json(
+      {
+        message:
+          "Too many payment attempts. Please wait a minute before trying again.",
+        resetAt: rateLimit.reset_at ?? null,
+      },
+      { status: 429 },
     );
   }
 

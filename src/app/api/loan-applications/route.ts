@@ -4,9 +4,11 @@ import {
   calculateLoanEstimate,
   calculateMaximumEligibleLoan,
   formatNaira,
+  getEffectiveLoanProductMaximum,
   parseMoney,
   roundCurrency,
   type LoanInterestType,
+  type LoanProductOption,
 } from "@/lib/loans";
 import { getMemberTier } from "@/lib/member-tier";
 import { sendMemberNotification } from "@/lib/notification-dispatch";
@@ -17,15 +19,20 @@ import { loanApplicationSchema } from "@/lib/validation/loans";
 export const runtime = "nodejs";
 
 type LoanProductRecord = {
+  description: string | null;
   id: string;
   name: string;
   interest_rate: number | string | null;
   interest_type: LoanInterestType;
+  maximum_disbursable_amount: number | string | null;
   min_amount: number | string | null;
   max_amount: number | string | null;
   min_tenure_months: number;
   max_tenure_months: number;
   max_loan_to_savings_ratio: number | string | null;
+  penalty_rate: number | string | null;
+  processing_fee_rate: number | string | null;
+  terms_summary: string | null;
   is_active: boolean;
 };
 
@@ -342,7 +349,7 @@ export async function POST(request: NextRequest) {
       admin
         .from("loan_products")
         .select(
-          "id, name, interest_rate, interest_type, min_amount, max_amount, min_tenure_months, max_tenure_months, max_loan_to_savings_ratio, is_active",
+          "id, name, description, interest_rate, interest_type, min_amount, max_amount, min_tenure_months, max_tenure_months, max_loan_to_savings_ratio, maximum_disbursable_amount, processing_fee_rate, penalty_rate, terms_summary, is_active",
         )
         .eq("id", parsed.data.loanProductId)
         .maybeSingle(),
@@ -384,7 +391,25 @@ export async function POST(request: NextRequest) {
   }
 
   const minAmount = parseMoney(selectedProduct.min_amount);
-  const maxAmount = parseMoney(selectedProduct.max_amount);
+  const maxAmount = getEffectiveLoanProductMaximum({
+    description: selectedProduct.description,
+    id: selectedProduct.id,
+    interestRate: parseMoney(selectedProduct.interest_rate),
+    interestType: selectedProduct.interest_type,
+    isActive: selectedProduct.is_active,
+    maxAmount: parseMoney(selectedProduct.max_amount),
+    maxLoanToSavingsRatio: parseMoney(selectedProduct.max_loan_to_savings_ratio),
+    maxTenureMonths: selectedProduct.max_tenure_months,
+    maximumDisbursableAmount: selectedProduct.maximum_disbursable_amount
+      ? parseMoney(selectedProduct.maximum_disbursable_amount)
+      : null,
+    minAmount,
+    minTenureMonths: selectedProduct.min_tenure_months,
+    name: selectedProduct.name,
+    penaltyRate: parseMoney(selectedProduct.penalty_rate),
+    processingFeeRate: parseMoney(selectedProduct.processing_fee_rate),
+    termsSummary: selectedProduct.terms_summary,
+  } satisfies LoanProductOption);
   const maxLoanToSavingsRatio = parseMoney(
     selectedProduct.max_loan_to_savings_ratio,
   );

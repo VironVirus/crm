@@ -1,20 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatNaira } from "@/lib/loans";
+import AdminMembersPageView from "@/features/admin/members/page-view";
+import { type CooperativeRole } from "@/lib/auth/roles";
 import { getMemberTier } from "@/lib/member-tier";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -22,9 +7,12 @@ type ProfileRecord = {
   email: string;
   full_name: string;
   id: string;
+  is_verified: boolean;
   member_number: string | null;
   phone: string | null;
+  role: CooperativeRole;
   status: "active" | "inactive" | "suspended";
+  verification_note: string | null;
 };
 
 type MemberRecord = {
@@ -61,27 +49,15 @@ function parseMoney(value: number | string | null | undefined) {
   return 0;
 }
 
-function formatDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Not set";
-  }
-
-  return date.toLocaleDateString("en-NG", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default async function AdminMembersPage() {
   const admin = createSupabaseAdminClient();
   const [profilesResult, membersResult, savingsResult, sharesResult] = await Promise.all([
     admin
       .from("profiles")
-      .select("id, full_name, email, phone, member_number, status")
-      .eq("role", "member")
+      .select(
+        "id, full_name, email, phone, member_number, role, status, is_verified, verification_note",
+      )
+      .not("member_number", "is", null)
       .order("created_at", { ascending: false }),
     admin
       .from("members")
@@ -128,13 +104,27 @@ export default async function AdminMembersPage() {
     return [{
       email: profile.email,
       fullName: profile.full_name,
+      hasCompleteKyc: Boolean(
+        member.national_id_path &&
+          member.passport_photo_path &&
+          member.utility_bill_path,
+      ),
+      hasNextOfKin: Boolean(
+        member.next_of_kin_name &&
+          member.next_of_kin_phone &&
+          member.next_of_kin_relationship,
+      ),
+      id: profile.id,
+      isVerified: profile.is_verified,
       joinedAt: member.created_at,
       memberNumber: profile.member_number,
       phone: profile.phone,
+      role: profile.role,
       savingsBalance: savingsByMember.get(profile.id) ?? 0,
       sharesValue: sharesByMember.get(profile.id) ?? 0,
       status: profile.status,
       tier,
+      verificationNote: profile.verification_note,
     }];
   });
 
@@ -143,12 +133,15 @@ export default async function AdminMembersPage() {
       accumulator.members += 1;
       accumulator.savings += row.savingsBalance;
       accumulator.shares += row.sharesValue;
+      if (row.isVerified) {
+        accumulator.verified += 1;
+      }
       if (row.status === "active") {
         accumulator.active += 1;
       }
       return accumulator;
     },
-    { active: 0, members: 0, savings: 0, shares: 0 },
+    { active: 0, members: 0, savings: 0, shares: 0, verified: 0 },
   );
 
   const errors = [
@@ -159,123 +152,10 @@ export default async function AdminMembersPage() {
   ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
-        <Badge className="w-fit">Members</Badge>
-        <h2 className="mt-4 font-['Outfit'] text-3xl font-semibold text-foreground">
-          Member directory
-        </h2>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardDescription>Total members</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
-              {totals.members}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Active members</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
-              {totals.active}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Total savings</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
-              {formatNaira(totals.savings)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Total shares value</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
-              {formatNaira(totals.shares)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </section>
-
-      {errors.length > 0 ? (
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
-          {errors.join(" ")}
-        </div>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-            Registered members
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-3xl border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Savings</TableHead>
-                  <TableHead>Shares</TableHead>
-                  <TableHead>Joined</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length > 0 ? (
-                  rows.map((row) => (
-                    <TableRow key={`${row.email}-${row.memberNumber ?? "pending"}`}>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="font-medium text-foreground">{row.fullName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {row.memberNumber ?? "Member number pending"} · {row.email}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {row.phone ?? "No phone on file"}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{row.tier.replace("_", " ").toUpperCase()}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            row.status === "active"
-                              ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-100"
-                              : row.status === "suspended"
-                                ? "border-rose-400/20 bg-rose-500/10 text-rose-700 dark:text-rose-100"
-                                : "border-amber-300/20 bg-amber-400/10 text-amber-800 dark:text-amber-100"
-                          }
-                          variant="outline"
-                        >
-                          {row.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatNaira(row.savingsBalance)}</TableCell>
-                      <TableCell>{formatNaira(row.sharesValue)}</TableCell>
-                      <TableCell>{row.joinedAt ? formatDate(row.joinedAt) : "Not set"}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell className="text-muted-foreground" colSpan={6}>
-                      No member records have been created yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <AdminMembersPageView
+      dataError={errors.length > 0 ? errors.join(" ") : null}
+      rows={rows}
+      totals={totals}
+    />
   );
 }

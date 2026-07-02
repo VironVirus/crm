@@ -37,15 +37,20 @@ type MemberRecord = {
 };
 
 type LoanProductRecord = {
+  description: string | null;
   id: string;
   name: string;
   interest_rate: number | string | null;
   interest_type: LoanInterestType;
+  maximum_disbursable_amount: number | string | null;
   min_amount: number | string | null;
   max_amount: number | string | null;
   min_tenure_months: number;
   max_tenure_months: number;
   max_loan_to_savings_ratio: number | string | null;
+  penalty_rate: number | string | null;
+  processing_fee_rate: number | string | null;
+  terms_summary: string | null;
   is_active: boolean;
 };
 
@@ -131,15 +136,22 @@ async function createSignedDocumentLinks(
 
 function mapLoanProduct(product: LoanProductRecord): LoanProductOption {
   return {
+    description: product.description,
     id: product.id,
     name: product.name,
     interestRate: parseMoney(product.interest_rate),
     interestType: product.interest_type,
+    maximumDisbursableAmount: product.maximum_disbursable_amount
+      ? parseMoney(product.maximum_disbursable_amount)
+      : null,
     minAmount: parseMoney(product.min_amount),
     maxAmount: parseMoney(product.max_amount),
     minTenureMonths: product.min_tenure_months,
     maxTenureMonths: product.max_tenure_months,
     maxLoanToSavingsRatio: parseMoney(product.max_loan_to_savings_ratio),
+    penaltyRate: parseMoney(product.penalty_rate),
+    processingFeeRate: parseMoney(product.processing_fee_rate),
+    termsSummary: product.terms_summary,
     isActive: product.is_active,
   };
 }
@@ -182,7 +194,7 @@ export default async function AdminLoansPage() {
     admin
       .from("loan_products")
       .select(
-        "id, name, interest_rate, interest_type, min_amount, max_amount, min_tenure_months, max_tenure_months, max_loan_to_savings_ratio, is_active",
+        "id, name, description, interest_rate, interest_type, min_amount, max_amount, min_tenure_months, max_tenure_months, max_loan_to_savings_ratio, maximum_disbursable_amount, processing_fee_rate, penalty_rate, terms_summary, is_active",
       )
       .order("name"),
     admin

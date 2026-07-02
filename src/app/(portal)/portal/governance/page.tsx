@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getMemberTier, getMemberTierMeta } from "@/lib/member-tier";
+import PortalGovernancePageView from "@/features/portal/governance/page-view";
+import { getMemberTier } from "@/lib/member-tier";
+import { parseMoney } from "@/lib/loans";
+import { syncMeetingState } from "@/lib/meetings/server";
+import { ensureMemberRecord } from "@/lib/members";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type MemberRecord = {
@@ -15,8 +16,37 @@ type MemberRecord = {
   utility_bill_path: string | null;
 };
 
+type ProfileRecord = {
+  member_number: string | null;
+};
+
+type MeetingRecord = {
+  agenda: string | null;
+  attendance_closes_at: string;
+  id: string;
+  location: string | null;
+  reminder_message: string | null;
+  starts_at: string;
+  status: "cancelled" | "closed" | "scheduled";
+  title: string;
+};
+
+type AttendanceRecord = {
+  charge_amount: number | string | null;
+  marked_at: string | null;
+  meeting_id: string;
+  status: "absent" | "late" | "present";
+};
+
+type ChargeRecord = {
+  amount: number | string | null;
+  source_id: string | null;
+  status: "paid" | "pending" | "waived";
+};
+
 export default async function PortalGovernancePage() {
   const supabase = createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,57 +55,103 @@ export default async function PortalGovernancePage() {
     redirect("/login?next=/portal/governance");
   }
 
-  const { data: member } = await supabase
-    .from("members")
-    .select(
-      "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-    )
+  await syncMeetingState(admin);
+
+  const profileResult = await supabase
+    .from("profiles")
+    .select("member_number")
     .eq("id", user.id)
     .maybeSingle();
+  const profile = profileResult.data as ProfileRecord | null;
 
-  const tier = getMemberTier(member as MemberRecord | null);
-  const tierMeta = getMemberTierMeta(tier);
+  const ensuredMemberResult = await ensureMemberRecord(admin, {
+    memberId: user.id,
+    memberNumber: profile?.member_number ?? null,
+    select:
+      "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
+  });
+  const member = ensuredMemberResult.data as MemberRecord | null;
+
+  const [meetingsResult, attendanceResult, chargesResult] = await Promise.all([
+    admin
+      .from("meetings")
+      .select(
+        "id, title, agenda, location, starts_at, attendance_closes_at, reminder_message, status",
+      )
+      .order("starts_at", { ascending: false }),
+    supabase
+      .from("meeting_attendance")
+      .select("meeting_id, status, marked_at, charge_amount")
+      .eq("member_id", user.id),
+    supabase
+      .from("member_charges")
+      .select("source_id, amount, status")
+      .eq("member_id", user.id)
+      .in("source_type", ["meeting_late", "meeting_absence"]),
+  ]);
+
+  const attendanceMap = new Map(
+    (((attendanceResult.data as AttendanceRecord[] | null) ?? []).map((row) => [
+      row.meeting_id,
+      row,
+    ])) satisfies Array<[string, AttendanceRecord]>,
+  );
+  const chargeMap = new Map(
+    (((chargesResult.data as ChargeRecord[] | null) ?? []).map((row) => [
+      row.source_id ?? "",
+      row,
+    ])) satisfies Array<[string, ChargeRecord]>,
+  );
+
+  const meetings = ((meetingsResult.data as MeetingRecord[] | null) ?? []).map(
+    (meeting) => {
+      const attendance = attendanceMap.get(meeting.id) ?? null;
+      const charge = chargeMap.get(meeting.id) ?? null;
+
+      return {
+        agenda: meeting.agenda,
+        attendanceClosesAt: meeting.attendance_closes_at,
+        attendanceMarkedAt: attendance?.marked_at ?? null,
+        attendanceStatus: attendance?.status ?? null,
+        chargeAmount: parseMoney(charge?.amount ?? attendance?.charge_amount),
+        chargeStatus: charge?.status ?? null,
+        id: meeting.id,
+        location: meeting.location,
+        reminderMessage: meeting.reminder_message,
+        startsAt: meeting.starts_at,
+        status: meeting.status,
+        title: meeting.title,
+      };
+    },
+  );
+
+  const pendingCharges = (chargesResult.data as ChargeRecord[] | null) ?? [];
+  const pendingChargesCount = pendingCharges.filter(
+    (charge) => charge.status === "pending",
+  ).length;
+  const pendingChargesAmount = pendingCharges.reduce((total, charge) => {
+    if (charge.status !== "pending") {
+      return total;
+    }
+
+    return total + parseMoney(charge.amount);
+  }, 0);
+
+  const errors = [
+    profileResult.error?.message,
+    ensuredMemberResult.error?.message,
+    meetingsResult.error?.message,
+    attendanceResult.error?.message,
+    chargesResult.error?.message,
+  ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
-        <Badge className="w-fit">{tierMeta.label}</Badge>
-        <h2 className="mt-4 font-['Outfit'] text-3xl font-semibold text-foreground">
-          Governance and voting
-        </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-          {tierMeta.canVote
-            ? "You can take part in society voting from this page whenever active resolutions are published."
-            : "Voting unlocks after you add your next of kin from your profile."}
-        </p>
-      </section>
-
-      {tierMeta.canVote ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-              No active votes right now
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm leading-6 text-muted-foreground">
-            No resolutions have been published.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-amber-300/20 bg-amber-400/10">
-          <CardHeader>
-            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-              Upgrade to Tier 2
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm leading-6 text-amber-800 dark:text-amber-100/90 sm:flex-row sm:items-center sm:justify-between">
-            <p>Add your next of kin to unlock voting and cooperative governance access.</p>
-            <Button asChild>
-              <Link href="/portal/profile">Open Profile</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    <PortalGovernancePageView
+      dataError={errors.length > 0 ? errors.join(" ") : null}
+      meetings={meetings}
+      memberTier={getMemberTier(member)}
+      pendingChargesAmount={pendingChargesAmount}
+      pendingChargesCount={pendingChargesCount}
+    />
   );
 }

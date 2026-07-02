@@ -5,9 +5,11 @@ import { getMemberTier } from "@/lib/member-tier";
 import { ensureMemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { KYC_STORAGE_BUCKET } from "@/lib/validation/member-registration";
 
 type ProfileRecord = {
   full_name: string;
+  is_verified: boolean;
   member_number: string | null;
 };
 
@@ -37,7 +39,7 @@ export default async function PortalLayout({
 
   const profileResult = await supabase
     .from("profiles")
-    .select("full_name, member_number")
+    .select("full_name, member_number, is_verified")
     .eq("id", user.id)
     .maybeSingle();
   const profile = profileResult.data as ProfileRecord | null;
@@ -48,12 +50,21 @@ export default async function PortalLayout({
       "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
   });
   const member = ensuredMemberResult.data as MemberRecord | null;
+  const userAvatarUrl = member?.passport_photo_path
+    ? (
+        await admin.storage
+          .from(KYC_STORAGE_BUCKET)
+          .createSignedUrl(member.passport_photo_path, 60 * 60)
+      ).data?.signedUrl ?? null
+    : null;
 
   return (
     <MemberShell
       memberName={profile?.full_name ?? user.email ?? "Member"}
       memberNumber={profile?.member_number ?? null}
       memberTier={getMemberTier(member)}
+      memberVerified={profile?.is_verified ?? false}
+      userAvatarUrl={userAvatarUrl}
       userEmail={user.email}
     >
       <ProtectedSessionGuard>{children}</ProtectedSessionGuard>

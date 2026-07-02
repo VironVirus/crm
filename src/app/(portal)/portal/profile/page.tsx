@@ -15,6 +15,7 @@ import { KYC_STORAGE_BUCKET } from "@/lib/validation/member-registration";
 type ProfileRecord = {
   email: string;
   full_name: string;
+  is_verified: boolean;
   member_number: string | null;
   phone: string | null;
 };
@@ -44,7 +45,7 @@ export default async function PortalProfilePage() {
 
   const profileResult = await supabase
     .from("profiles")
-    .select("email, full_name, member_number, phone")
+    .select("email, full_name, member_number, phone, is_verified")
     .eq("id", user.id)
     .maybeSingle();
   const profile = profileResult.data as ProfileRecord | null;
@@ -78,6 +79,7 @@ export default async function PortalProfilePage() {
         passportPhoto: Boolean(member?.passport_photo_path),
         utilityBill: Boolean(member?.utility_bill_path),
       }}
+      isVerified={profile?.is_verified ?? false}
       memberName={profile?.full_name ?? user.email ?? "Member"}
       memberNumber={profile?.member_number ?? null}
       nextOfKin={{

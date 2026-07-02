@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import MemberDashboardPageView from "@/features/portal/dashboard/page-view";
 import { getMemberTier } from "@/lib/member-tier";
+import { syncMeetingState } from "@/lib/meetings/server";
 import { ensureMemberRecord } from "@/lib/members";
 import {
   parseMoney,
@@ -114,6 +115,11 @@ type LoanGuarantorRecord = {
   id: string;
 };
 
+type MemberChargeRecord = {
+  amount: number | string | null;
+  status: "paid" | "pending" | "waived";
+};
+
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
@@ -153,12 +159,16 @@ export default async function MemberDashboardPage() {
     redirect("/login?next=/portal");
   }
 
+  await syncMeetingState(admin);
+
   const [
     profileResult,
     savingsAccountsResult,
     loansResult,
     guarantorRequestsResult,
     shareHoldingResult,
+    openMeetingsCountResult,
+    pendingChargesResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -189,6 +199,16 @@ export default async function MemberDashboardPage() {
       .select("total_shares, total_value")
       .eq("member_id", user.id)
       .maybeSingle(),
+    admin
+      .from("meetings")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "scheduled"),
+    supabase
+      .from("member_charges")
+      .select("amount, status")
+      .eq("member_id", user.id)
+      .eq("status", "pending")
+      .in("source_type", ["meeting_late", "meeting_absence"]),
   ]);
   const profile = profileResult.data as ProfileRecord | null;
   const ensuredMemberResult = await ensureMemberRecord(admin, {
@@ -462,6 +482,12 @@ export default async function MemberDashboardPage() {
 
   const guarantorRequests =
     (guarantorRequestsResult.data as LoanGuarantorRecord[] | null) ?? [];
+  const pendingCharges =
+    (pendingChargesResult.data as MemberChargeRecord[] | null) ?? [];
+  const pendingChargesAmount = pendingCharges.reduce(
+    (total, charge) => total + parseMoney(charge.amount),
+    0,
+  );
   const errors = [
     profileResult.error?.message,
     ensuredMemberResult.error?.message,
@@ -475,6 +501,8 @@ export default async function MemberDashboardPage() {
     loanTransactionsResult.error?.message,
     shareTransactionsResult.error?.message,
     loanProductsResult.error?.message,
+    openMeetingsCountResult.error?.message,
+    pendingChargesResult.error?.message,
   ].filter(Boolean);
 
   return (
@@ -484,6 +512,9 @@ export default async function MemberDashboardPage() {
       memberName={profile?.full_name ?? user.email ?? "Member"}
       memberNumber={profile?.member_number ?? null}
       memberTier={getMemberTier(member)}
+      openMeetingCount={openMeetingsCountResult.count ?? 0}
+      pendingChargesAmount={pendingChargesAmount}
+      pendingChargesCount={pendingCharges.length}
       pendingGuarantorCount={guarantorRequests.length}
       recentTransactions={recentTransactions}
       savingsBalance={savingsBalance}

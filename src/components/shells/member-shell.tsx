@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   CreditCard,
+  LineChart,
   LayoutDashboard,
   LayoutGrid,
   Menu,
@@ -25,6 +26,8 @@ type MemberShellProps = {
   memberName: string;
   memberNumber: string | null;
   memberTier: MemberTier;
+  memberVerified?: boolean;
+  userAvatarUrl?: string | null;
   userEmail?: string;
 };
 
@@ -39,9 +42,10 @@ const portalItems: NavigationItem[] = [
   { href: "/portal", icon: LayoutDashboard, label: "Home" },
   { href: "/portal/savings", icon: CreditCard, label: "Savings" },
   { href: "/portal/actions", icon: LayoutGrid, label: "Actions" },
+  { href: "/portal/financials", icon: LineChart, label: "Financials" },
   { href: "/portal/profile", icon: UserRound, label: "Profile" },
   { href: "/portal/notifications", icon: ShieldCheck, label: "Alerts" },
-  { href: "/portal/governance", icon: Vote, label: "Voting", minimumTier: "tier_2" },
+  { href: "/portal/governance", icon: Vote, label: "Meetings" },
   { href: "/portal/loans", icon: Wallet, label: "Loans", minimumTier: "tier_3" },
 ];
 
@@ -89,7 +93,7 @@ function NavigationLink({
           <Icon className="h-4 w-4" />
           <span>{label}</span>
         </div>
-        <span className="text-[11px] uppercase tracking-[0.22em] text-amber-200">
+        <span className="text-[11px] uppercase tracking-[0.22em] text-amber-800 dark:text-amber-200">
           {minimumTier?.replace("_", " ").toUpperCase()}
         </span>
       </div>
@@ -117,6 +121,8 @@ export default function MemberShell({
   memberName,
   memberNumber,
   memberTier,
+  memberVerified = false,
+  userAvatarUrl,
   userEmail,
 }: MemberShellProps) {
   const pathname = usePathname();
@@ -156,7 +162,7 @@ export default function MemberShell({
       {
         title: "More",
         items: portalItems.filter((item) =>
-          ["/portal/notifications", "/portal/governance", "/portal/loans"].includes(
+          ["/portal/financials", "/portal/notifications", "/portal/governance", "/portal/loans"].includes(
             item.href,
           ),
         ),
@@ -244,11 +250,26 @@ export default function MemberShell({
           <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-border bg-card p-5 text-card-foreground shadow-2xl shadow-black/20 dark:shadow-black/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-100">
-                  {initials}
-                </div>
+                {userAvatarUrl ? (
+                  <img
+                    alt={`${memberName} passport`}
+                    className="h-11 w-11 rounded-full border border-border object-cover"
+                    src={userAvatarUrl}
+                  />
+                ) : (
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-100">
+                    {initials}
+                  </div>
+                )}
                 <div>
-                  <p className="font-medium text-foreground">{memberName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-foreground">{memberName}</p>
+                    {memberVerified ? (
+                      <span className="rounded-full border border-sky-300/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-700 dark:text-sky-100">
+                        Verified
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {memberNumber ?? "Member number pending"}
                   </p>

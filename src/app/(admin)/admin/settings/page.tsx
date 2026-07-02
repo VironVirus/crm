@@ -1,66 +1,88 @@
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import AdminSettingsPageView from "@/features/admin/settings/page-view";
 import { getRequiredEnvironmentVariables } from "@/lib/env/requirements";
+import { parseMoney, type LoanInterestType, type LoanProductOption } from "@/lib/loans";
+import { parseSupabaseNumeric, type ShareConfig } from "@/lib/shares";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export default function AdminSettingsPage() {
+type LoanProductRecord = {
+  description: string | null;
+  id: string;
+  interest_rate: number | string | null;
+  interest_type: LoanInterestType;
+  is_active: boolean;
+  max_amount: number | string | null;
+  max_loan_to_savings_ratio: number | string | null;
+  max_tenure_months: number;
+  maximum_disbursable_amount: number | string | null;
+  min_amount: number | string | null;
+  min_tenure_months: number;
+  name: string;
+  penalty_rate: number | string | null;
+  processing_fee_rate: number | string | null;
+  terms_summary: string | null;
+};
+
+type ShareConfigRecord = {
+  created_at: string;
+  minimum_shares: number;
+  share_value: number | string | null;
+};
+
+export default async function AdminSettingsPage() {
+  const admin = createSupabaseAdminClient();
   const requirements = getRequiredEnvironmentVariables();
+  const [loanProductsResult, shareConfigResult] = await Promise.all([
+    admin
+      .from("loan_products")
+      .select(
+        "id, name, description, interest_rate, interest_type, min_amount, max_amount, min_tenure_months, max_tenure_months, max_loan_to_savings_ratio, maximum_disbursable_amount, processing_fee_rate, penalty_rate, terms_summary, is_active",
+      )
+      .order("name"),
+    admin
+      .from("share_config")
+      .select("share_value, minimum_shares, created_at")
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const loanProducts = ((loanProductsResult.data as LoanProductRecord[] | null) ?? []).map(
+    (product) =>
+      ({
+        description: product.description,
+        id: product.id,
+        interestRate: parseMoney(product.interest_rate),
+        interestType: product.interest_type,
+        isActive: product.is_active,
+        maxAmount: parseMoney(product.max_amount),
+        maxLoanToSavingsRatio: parseMoney(product.max_loan_to_savings_ratio),
+        maxTenureMonths: product.max_tenure_months,
+        maximumDisbursableAmount: product.maximum_disbursable_amount
+          ? parseMoney(product.maximum_disbursable_amount)
+          : null,
+        minAmount: parseMoney(product.min_amount),
+        minTenureMonths: product.min_tenure_months,
+        name: product.name,
+        penaltyRate: parseMoney(product.penalty_rate),
+        processingFeeRate: parseMoney(product.processing_fee_rate),
+        termsSummary: product.terms_summary,
+      }) satisfies LoanProductOption,
+  );
+  const shareConfig = shareConfigResult.data
+    ? ({
+        createdAt: (shareConfigResult.data as ShareConfigRecord).created_at,
+        minimumShares: (shareConfigResult.data as ShareConfigRecord).minimum_shares,
+        shareValue: parseSupabaseNumeric(
+          (shareConfigResult.data as ShareConfigRecord).share_value,
+        ),
+      } satisfies ShareConfig)
+    : null;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[32px] border border-white/15 bg-[#111827] p-6 shadow-2xl shadow-black/30">
-        <Badge className="w-fit">Settings</Badge>
-        <h2 className="mt-4 font-['Outfit'] text-3xl font-semibold text-white">
-          Deployment settings
-        </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
-          This page shows the key environment values the application expects in
-          production. Database structure, notifications, and payment providers
-          are controlled from your platform settings and Supabase project.
-        </p>
-      </section>
-
-      <Card className="border-white/15 bg-[#111827]">
-        <CardHeader>
-          <CardTitle className="font-['Outfit'] text-2xl text-white">
-            Required environment variables
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          {requirements.required.map((item) => (
-            <div
-              key={item.name}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200"
-            >
-              <p className="font-medium text-white">{item.name}</p>
-              <p className="mt-1 text-slate-400">{item.description}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="border-white/15 bg-[#111827]">
-        <CardHeader>
-          <CardTitle className="font-['Outfit'] text-2xl text-white">
-            Recommended environment variables
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2">
-          {requirements.recommended.map((item) => (
-            <div
-              key={item.name}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-4 text-sm text-slate-200"
-            >
-              <p className="font-medium text-white">{item.name}</p>
-              <p className="mt-1 text-slate-400">{item.description}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
+    <AdminSettingsPageView
+      loanProducts={loanProducts}
+      recommended={requirements.recommended}
+      required={requirements.required}
+      shareConfig={shareConfig}
+    />
   );
 }

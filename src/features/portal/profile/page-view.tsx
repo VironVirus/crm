@@ -46,6 +46,7 @@ type MemberProfilePageViewProps = {
     passportPhoto: boolean;
     utilityBill: boolean;
   };
+  isVerified: boolean;
   memberName: string;
   memberNumber: string | null;
   nextOfKin: {
@@ -96,6 +97,7 @@ export default function MemberProfilePageView({
   dateOfBirth,
   email,
   kycStatus,
+  isVerified,
   memberName,
   memberNumber,
   nextOfKin,
@@ -265,7 +267,7 @@ export default function MemberProfilePageView({
 
       <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             {passportPhotoUrl ? (
               <img
                 alt={`${memberName} passport`}
@@ -280,9 +282,19 @@ export default function MemberProfilePageView({
             <div className="space-y-2">
               <Badge className="w-fit">{tierMeta.label}</Badge>
               <div>
-                <h2 className="font-['Outfit'] text-2xl font-semibold text-foreground sm:text-3xl">
-                  {memberName}
-                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-['Outfit'] text-xl font-semibold text-foreground sm:text-3xl">
+                    {memberName}
+                  </h2>
+                  {isVerified ? (
+                    <Badge
+                      className="border-sky-300/30 bg-sky-500/10 text-sky-700 dark:text-sky-100"
+                      variant="outline"
+                    >
+                      Verified
+                    </Badge>
+                  ) : null}
+                </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {memberNumber ?? "Member number pending"}
                 </p>
@@ -290,11 +302,11 @@ export default function MemberProfilePageView({
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-emerald-400/15 bg-emerald-500/10 px-5 py-4">
+          <div className="w-full rounded-[28px] border border-emerald-400/15 bg-emerald-500/10 px-5 py-4 lg:w-auto">
             <p className="text-xs uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-100">
               Current tier
             </p>
-            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
+            <p className="mt-2 font-['Outfit'] text-xl font-semibold text-foreground sm:text-2xl">
               {tierMeta.label} · {tierMeta.medal}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{tierMeta.nextStep}</p>
@@ -380,17 +392,17 @@ export default function MemberProfilePageView({
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-4 text-sm">
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-secondary px-4 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span className="text-foreground">Savings and payments</span>
               <Badge variant="secondary">Enabled</Badge>
             </div>
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-4 text-sm">
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-secondary px-4 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span className="text-foreground">Voting access</span>
               <Badge variant={tierMeta.canVote ? "secondary" : "outline"}>
                 {tierMeta.canVote ? "Enabled" : "Locked"}
               </Badge>
             </div>
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-4 py-4 text-sm">
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-secondary px-4 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span className="text-foreground">Loans and shares</span>
               <Badge
                 variant={tierMeta.canAccessLoans && tierMeta.canAccessShares ? "secondary" : "outline"}

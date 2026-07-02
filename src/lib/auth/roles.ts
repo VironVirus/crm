@@ -1,7 +1,3 @@
-import "server-only";
-
-import { type createServerSupabaseClient } from "@/lib/supabase/server";
-
 export const COOPERATIVE_ROLES = [
   "admin",
   "loan_officer",
@@ -24,21 +20,4 @@ export function isFinancialRecordManager(
   role: CooperativeRole | string | null | undefined,
 ) {
   return role === "admin" || role === "treasurer";
-}
-
-export async function getCurrentUserRole(
-  supabase: ReturnType<typeof createServerSupabaseClient>,
-  userId: string,
-) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error || !isCooperativeRole(data?.role)) {
-    return null;
-  }
-
-  return data.role;
 }

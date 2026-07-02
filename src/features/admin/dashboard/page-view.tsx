@@ -12,12 +12,14 @@ import {
   Activity,
   AlertTriangle,
   ArrowUpRight,
+  CalendarClock,
   Coins,
   CreditCard,
   FileText,
   Landmark,
   Loader2,
   PiggyBank,
+  Settings2,
   TrendingUp,
   UserPlus,
   Users,
@@ -79,12 +81,12 @@ function formatSignedAmount(value: number) {
 function getActivityAccent(source: DashboardRecentActivitySource) {
   switch (source) {
     case "loans":
-      return "border-amber-300/25 bg-amber-400/15 text-amber-100";
+      return "border-amber-300/25 bg-amber-400/15 text-amber-800 dark:text-amber-100";
     case "shares":
-      return "border-sky-300/25 bg-sky-400/15 text-sky-100";
+      return "border-sky-300/25 bg-sky-400/15 text-sky-700 dark:text-sky-100";
     case "savings":
     default:
-      return "border-emerald-400/25 bg-emerald-500/15 text-emerald-100";
+      return "border-emerald-400/25 bg-emerald-500/15 text-emerald-700 dark:text-emerald-100";
   }
 }
 
@@ -131,8 +133,8 @@ function DashboardKpiCard({
           <div
             className={
               danger
-                ? "flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-400/25 bg-rose-500/15 text-rose-100"
-                : "flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/15 text-emerald-100"
+                ? "flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-400/25 bg-rose-500/15 text-rose-700 dark:text-rose-100"
+                : "flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
             }
           >
             <Icon className="h-5 w-5" />
@@ -143,7 +145,7 @@ function DashboardKpiCard({
             {value}
           </CardTitle>
           <CardDescription
-            className={danger ? "text-rose-100/85" : "text-muted-foreground"}
+            className={danger ? "text-rose-700 dark:text-rose-100/85" : "text-muted-foreground"}
           >
             {description}
           </CardDescription>
@@ -266,7 +268,7 @@ export default function AdminDashboardPageView({
         <div className="max-w-3xl space-y-3">
           <Badge className="w-fit">Admin Overview</Badge>
           <div className="space-y-2">
-            <h2 className="font-['Outfit'] text-3xl font-semibold text-foreground">
+            <h2 className="max-w-xl font-['Outfit'] text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
               Cooperative performance at a glance
             </h2>
           </div>
@@ -274,10 +276,10 @@ export default function AdminDashboardPageView({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-[28px] border border-amber-300/25 bg-amber-400/15 px-5 py-4">
-            <p className="text-xs uppercase tracking-[0.28em] text-amber-200">
+            <p className="text-xs uppercase tracking-[0.28em] text-amber-800 dark:text-amber-200">
               Pending loan reviews
             </p>
-            <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-foreground">
+            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground sm:text-3xl">
               {kpis.pendingLoanReviewCount}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -288,7 +290,7 @@ export default function AdminDashboardPageView({
             <p className="text-xs uppercase tracking-[0.28em] text-emerald-200">
               Collections this month
             </p>
-            <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-foreground">
+            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground sm:text-3xl">
               {formatDashboardNaira(kpis.collectionsThisMonth)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -299,7 +301,7 @@ export default function AdminDashboardPageView({
       </section>
 
       {dataError ? (
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
           {dataError}
         </div>
       ) : null}
@@ -573,7 +575,7 @@ export default function AdminDashboardPageView({
           </CardHeader>
           <CardContent className="space-y-3">
             {activityError ? (
-              <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
                 {activityError}
               </div>
             ) : null}
@@ -656,7 +658,7 @@ export default function AdminDashboardPageView({
               <Link href="/register">
                 <div className="flex w-full items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-200">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-200">
                       <UserPlus className="h-5 w-5" />
                     </div>
                     <div>
@@ -676,7 +678,7 @@ export default function AdminDashboardPageView({
               <Link href="/admin/finance">
                 <div className="flex w-full items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-100">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-700 dark:text-sky-100">
                       <CreditCard className="h-5 w-5" />
                     </div>
                     <div>
@@ -696,7 +698,7 @@ export default function AdminDashboardPageView({
               <Link href="/admin/loans">
                 <div className="flex w-full items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-100">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-800 dark:text-amber-100">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
@@ -720,10 +722,50 @@ export default function AdminDashboardPageView({
               className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
               variant="secondary"
             >
+              <Link href="/admin/governance">
+                <div className="flex w-full items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-800 dark:text-amber-100">
+                      <CalendarClock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Manage Meetings</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="mt-1 h-4 w-4 shrink-0" />
+                </div>
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
+              variant="secondary"
+            >
+              <Link href="/admin/settings">
+                <div className="flex w-full items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-200">
+                      <Settings2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Loan Products</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="mt-1 h-4 w-4 shrink-0" />
+                </div>
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              className="h-auto justify-start rounded-[28px] border border-border bg-secondary px-5 py-4 text-left text-foreground hover:bg-muted"
+              variant="secondary"
+            >
               <Link href="/admin/shares">
                 <div className="flex w-full items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-400/15 text-violet-100">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-400/15 text-violet-700 dark:text-violet-100">
                       <TrendingUp className="h-5 w-5" />
                     </div>
                     <div>

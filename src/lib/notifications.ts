@@ -5,6 +5,9 @@ export const NOTIFICATION_TYPES = [
   "guarantor_invite",
   "due_reminder",
   "dividend_paid",
+  "meeting_update",
+  "attendance_charge",
+  "member_verified",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -46,6 +49,12 @@ export function formatNotificationTypeLabel(value: NotificationType) {
       return "Due reminder";
     case "dividend_paid":
       return "Dividend paid";
+    case "meeting_update":
+      return "Meeting update";
+    case "attendance_charge":
+      return "Attendance charge";
+    case "member_verified":
+      return "Member verified";
     default:
       return value;
   }
@@ -104,6 +113,12 @@ export function getNotificationTone(value: NotificationType) {
       return "border-orange-300/25 bg-orange-400/10 text-orange-100";
     case "dividend_paid":
       return "border-fuchsia-300/25 bg-fuchsia-500/10 text-fuchsia-100";
+    case "meeting_update":
+      return "border-emerald-300/25 bg-emerald-500/10 text-emerald-100";
+    case "attendance_charge":
+      return "border-rose-300/25 bg-rose-500/10 text-rose-100";
+    case "member_verified":
+      return "border-sky-300/25 bg-sky-500/10 text-sky-100";
     default:
       return "border-white/10 bg-white/5 text-slate-100";
   }

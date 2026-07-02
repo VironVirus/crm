@@ -63,17 +63,33 @@ export type PendingGuarantorRequest = {
 };
 
 export type LoanProductOption = {
+  description: string | null;
   id: string;
   name: string;
   interestRate: number;
   interestType: LoanInterestType;
+  maximumDisbursableAmount: number | null;
   minAmount: number;
   maxAmount: number;
   minTenureMonths: number;
   maxTenureMonths: number;
   maxLoanToSavingsRatio: number;
+  penaltyRate: number;
+  processingFeeRate: number;
+  termsSummary: string | null;
   isActive: boolean;
 };
+
+export function getEffectiveLoanProductMaximum(product: LoanProductOption) {
+  if (
+    typeof product.maximumDisbursableAmount === "number" &&
+    product.maximumDisbursableAmount > 0
+  ) {
+    return Math.min(product.maxAmount, product.maximumDisbursableAmount);
+  }
+
+  return product.maxAmount;
+}
 
 export type MemberLoanApplicationRow = {
   id: string;

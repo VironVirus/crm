@@ -9,6 +9,8 @@ import {
   Landmark,
   LayoutDashboard,
   Menu,
+  Settings2,
+  Vote,
   Users,
   Wallet,
   X,
@@ -35,7 +37,9 @@ const adminItems: NavigationItem[] = [
   { href: "/admin/finance", icon: Wallet, label: "Savings" },
   { href: "/admin/loans", icon: Landmark, label: "Loans" },
   { href: "/admin/reports", icon: BarChart3, label: "Reports" },
+  { href: "/admin/governance", icon: Vote, label: "Meetings" },
   { href: "/admin/shares", icon: Coins, label: "Shares" },
+  { href: "/admin/settings", icon: Settings2, label: "Settings" },
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -67,7 +71,7 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
                 <p className="max-w-[210px] truncate font-['Outfit'] text-sm font-semibold text-foreground sm:max-w-none sm:text-lg">
                   {COOPERATIVE_NAME}
                 </p>
-                <p className="text-xs uppercase tracking-[0.24em] text-amber-300">
+                <p className="text-xs uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
                   Admin dashboard
                 </p>
               </div>
@@ -135,7 +139,7 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
           <div className="absolute right-0 top-0 h-full w-full max-w-sm border-l border-border bg-card p-5 text-card-foreground shadow-2xl shadow-black/20 dark:shadow-black/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-100">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 font-semibold text-emerald-700 dark:text-emerald-100">
                   {initials}
                 </div>
                 <div>

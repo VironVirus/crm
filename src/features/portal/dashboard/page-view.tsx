@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { type ComponentType } from "react";
 import {
+  AlertTriangle,
   CalendarClock,
   PiggyBank,
   ShieldCheck,
@@ -18,6 +20,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/theme/theme-provider";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -54,6 +57,9 @@ type MemberDashboardPageViewProps = {
   memberName: string;
   memberNumber: string | null;
   memberTier: MemberTier;
+  openMeetingCount: number;
+  pendingChargesAmount: number;
+  pendingChargesCount: number;
   pendingGuarantorCount: number;
   recentTransactions: PortalDashboardRecentTransaction[];
   savingsBalance: number;
@@ -128,6 +134,9 @@ export default function MemberDashboardPageView({
   memberName,
   memberNumber,
   memberTier,
+  openMeetingCount,
+  pendingChargesAmount,
+  pendingChargesCount,
   pendingGuarantorCount,
   recentTransactions,
   savingsBalance,
@@ -184,8 +193,38 @@ export default function MemberDashboardPageView({
         </div>
       </section>
 
+      {openMeetingCount > 0 || pendingChargesCount > 0 ? (
+        <section>
+          <Card className={pendingChargesCount > 0 ? "border-rose-400/20 bg-rose-500/10" : ""}>
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-400/10 text-amber-800 dark:text-amber-100">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">
+                    {openMeetingCount > 0
+                      ? `${openMeetingCount} meeting${openMeetingCount === 1 ? "" : "s"} currently open for attendance`
+                      : "Attendance charges need your attention"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {pendingChargesCount > 0
+                      ? `${pendingChargesCount} pending meeting charge${pendingChargesCount === 1 ? "" : "s"} worth ${formatNaira(pendingChargesAmount)}`
+                      : "Open governance to mark attendance before the close time."}
+                  </p>
+                </div>
+              </div>
+
+              <Button asChild variant="secondary">
+                <Link href="/portal/governance">Open governance</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
+
       <section className="-mx-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
-        <div className="grid auto-cols-[86%] grid-flow-col gap-4 sm:auto-cols-[280px] md:grid-flow-row md:auto-cols-auto md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid auto-cols-[86%] grid-flow-col gap-4 sm:auto-cols-[280px] md:grid-flow-row md:auto-cols-auto md:grid-cols-2 xl:grid-cols-5">
           <SummaryCard
             description="Mandatory and voluntary balances together."
             icon={PiggyBank}
@@ -228,6 +267,13 @@ export default function MemberDashboardPageView({
             label="Guarantor requests"
             tone={pendingGuarantorCount > 0 ? "danger" : "default"}
             value={pendingGuarantorCount.toLocaleString("en-NG")}
+          />
+          <SummaryCard
+            description="Late or absent meeting charges still on your account."
+            icon={AlertTriangle}
+            label="Pending charges"
+            tone={pendingChargesCount > 0 ? "danger" : "default"}
+            value={formatNaira(pendingChargesAmount)}
           />
         </div>
       </section>
