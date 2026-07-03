@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import { COOPERATIVE_NAME } from "@/lib/brand";
 import {
@@ -239,10 +240,9 @@ export function MemberRegistrationForm() {
             <div className="mt-4 grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
+                <PasswordInput
                   id="password"
                   placeholder="Password"
-                  type="password"
                   {...register("password")}
                 />
                 <FieldMessage message={errors.password?.message} />
@@ -250,10 +250,9 @@ export function MemberRegistrationForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
                   placeholder="Confirm password"
-                  type="password"
                   {...register("confirmPassword")}
                 />
                 <FieldMessage message={errors.confirmPassword?.message} />

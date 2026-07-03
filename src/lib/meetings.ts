@@ -26,6 +26,7 @@ export type MeetingRow = {
   agenda: string | null;
   location: string | null;
   startsAt: string;
+  latenessStartsAt: string;
   attendanceClosesAt: string;
   reminderMessage: string | null;
   status: MeetingStatus;
@@ -39,6 +40,9 @@ export type MeetingAttendanceRow = {
   status: MeetingAttendanceStatus;
   markedAt: string | null;
   chargeAmount: number;
+  isApproved: boolean;
+  approvedAt: string | null;
+  notes: string | null;
 };
 
 export type MemberChargeRow = {
@@ -106,13 +110,13 @@ export function getAttendanceStatusTone(value: MeetingAttendanceStatus) {
 }
 
 export function resolveMeetingAttendanceStatus({
+  latenessStartsAt,
   markedAt,
-  startsAt,
 }: {
+  latenessStartsAt: Date;
   markedAt: Date;
-  startsAt: Date;
 }): MeetingAttendanceStatus {
-  return markedAt.getTime() > startsAt.getTime() ? "late" : "present";
+  return markedAt.getTime() > latenessStartsAt.getTime() ? "late" : "present";
 }
 
 export function canMemberMarkAttendance({

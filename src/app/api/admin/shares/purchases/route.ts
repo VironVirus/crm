@@ -4,6 +4,10 @@ import { isFinancialRecordManager } from "@/lib/auth/roles";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { parseSupabaseNumeric } from "@/lib/shares";
+import {
+  composeTransactionReference,
+  generateTransactionReference,
+} from "@/lib/transaction-references";
 import { sharePurchaseSchema } from "@/lib/validation/shares";
 
 export const runtime = "nodejs";
@@ -114,13 +118,17 @@ export async function POST(request: NextRequest) {
   const amount =
     parsed.data.sharesCount *
     parseSupabaseNumeric((shareConfig as ShareConfigRecord).share_value);
+  const paymentReference = composeTransactionReference(
+    await generateTransactionReference(admin),
+    parsed.data.paymentReference,
+  );
 
   const { error: purchaseError } = await admin.from("share_transactions").insert({
     member_id: parsed.data.memberId,
     transaction_type: "purchase",
     shares_count: parsed.data.sharesCount,
     amount,
-    payment_reference: parsed.data.paymentReference ?? null,
+    payment_reference: paymentReference,
     created_by: user.id,
     notes: parsed.data.notes ?? null,
   });

@@ -29,12 +29,14 @@ import { getMemberTierMeta, type MemberTier } from "@/lib/member-tier";
 
 type GovernanceMeetingRow = {
   agenda: string | null;
+  attendanceApproved: boolean | null;
   attendanceClosesAt: string;
   attendanceMarkedAt: string | null;
   attendanceStatus: MeetingAttendanceStatus | null;
   chargeAmount: number;
   chargeStatus: MemberChargeStatus | null;
   id: string;
+  latenessStartsAt: string;
   location: string | null;
   reminderMessage: string | null;
   startsAt: string;
@@ -268,11 +270,17 @@ export default function PortalGovernancePageView({
 
                   {meeting.attendanceStatus && meeting.attendanceMarkedAt ? (
                     <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
-                      Attendance marked on {formatMeetingDateTime(meeting.attendanceMarkedAt)}.
+                      Attendance marked on {formatMeetingDateTime(meeting.attendanceMarkedAt)}.{" "}
+                      {meeting.attendanceApproved === false
+                        ? "Admin approval is still pending."
+                        : meeting.attendanceApproved
+                          ? "This attendance has been approved."
+                          : ""}
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
-                      Attendance opens up to one hour before the meeting and stays open until the close time.
+                      Attendance opens up to one hour before the meeting, lateness starts counting from{" "}
+                      {formatMeetingDateTime(meeting.latenessStartsAt)}, and attendance stays open until the close time.
                     </div>
                   )}
 

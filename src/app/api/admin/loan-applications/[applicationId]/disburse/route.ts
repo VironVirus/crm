@@ -4,6 +4,10 @@ import { isFinancialRecordManager } from "@/lib/auth/roles";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { parseMoney } from "@/lib/loans";
+import {
+  composeTransactionReference,
+  generateTransactionReference,
+} from "@/lib/transaction-references";
 import { applicationIdParamsSchema } from "@/lib/validation/api";
 import { loanDisbursementSchema } from "@/lib/validation/loans";
 
@@ -167,6 +171,13 @@ export async function POST(
     );
   }
 
+  const paymentReference = hasDisbursementTransaction
+    ? null
+    : composeTransactionReference(
+        await generateTransactionReference(admin),
+        parsed.data.transferReference,
+      );
+
   const transactionError = hasDisbursementTransaction
     ? null
     : (
@@ -176,7 +187,7 @@ export async function POST(
             loan_id: selectedLoan.id,
             transaction_type: "disbursement",
             amount: parsed.data.amount,
-            payment_reference: parsed.data.transferReference,
+            payment_reference: paymentReference,
             created_by: user.id,
           })
       ).error;

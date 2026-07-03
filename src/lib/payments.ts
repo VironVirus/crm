@@ -68,17 +68,3 @@ export function formatPaymentTypeLabel(value: PaymentType) {
 export function isPaymentType(value: string): value is PaymentType {
   return PAYMENT_TYPES.includes(value as PaymentType);
 }
-
-function normalizeTxRefSegment(value: string | null | undefined) {
-  const normalized = (value ?? "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  return normalized || "PENDING";
-}
-
-export function buildFlutterwaveTxRef(memberNumber: string | null | undefined) {
-  return `COOP-${Date.now()}-${normalizeTxRefSegment(memberNumber)}`;
-}

@@ -3601,6 +3601,7 @@ create table if not exists public.meetings (
   agenda text,
   location text,
   starts_at timestamptz not null,
+  lateness_starts_at timestamptz not null,
   attendance_closes_at timestamptz not null,
   reminder_message text,
   status public.meeting_status not null default 'scheduled',
@@ -3610,7 +3611,12 @@ create table if not exists public.meetings (
   created_at timestamptz not null default timezone('utc'::text, now()),
   updated_at timestamptz not null default timezone('utc'::text, now()),
   constraint meetings_attendance_window_valid
-    check (attendance_closes_at > starts_at)
+    check (attendance_closes_at > starts_at),
+  constraint meetings_lateness_window_valid
+    check (
+      lateness_starts_at >= starts_at
+      and attendance_closes_at > lateness_starts_at
+    )
 );
 
 create table if not exists public.meeting_attendance (
@@ -3620,6 +3626,9 @@ create table if not exists public.meeting_attendance (
   status public.meeting_attendance_status not null,
   marked_at timestamptz,
   marked_by uuid references public.profiles(id) on delete set null,
+  is_approved boolean not null default false,
+  approved_at timestamptz,
+  approved_by uuid references public.profiles(id) on delete set null,
   notes text,
   charge_amount numeric(14,2) not null default 0 check (charge_amount >= 0),
   created_at timestamptz not null default timezone('utc'::text, now()),

@@ -8,6 +8,10 @@ import {
   type SavingsAccountType,
 } from "@/lib/savings";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  composeTransactionReference,
+  generateTransactionReference,
+} from "@/lib/transaction-references";
 import { savingsTransactionSchema } from "@/lib/validation/savings";
 
 export const runtime = "nodejs";
@@ -165,13 +169,18 @@ export async function POST(request: NextRequest) {
     createdNewAccount = true;
   }
 
+  const paymentReference = composeTransactionReference(
+    await generateTransactionReference(admin),
+    parsed.data.paymentReference,
+  );
+
   const { data: transactionRecord, error: transactionError } = await admin
     .from("savings_transactions")
     .insert({
       savings_account_id: savingsAccountId,
       transaction_type: parsed.data.transactionType,
       amount: parsed.data.amount,
-      payment_reference: parsed.data.paymentReference ?? null,
+      payment_reference: paymentReference,
       narration: parsed.data.narration ?? null,
       created_by: user.id,
     })

@@ -162,10 +162,16 @@ html {
   height: 100%;
   font-size: 16px;
   scroll-behavior: smooth;
+  width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   min-height: 100%;
+  width: 100%;
+  max-width: 100%;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-family-sans);
@@ -191,6 +197,14 @@ a {
 button, input, select, textarea {
   font-family: var(--font-family-sans);
   font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Global Custom Scrollbar */

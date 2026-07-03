@@ -56,12 +56,13 @@ export async function POST(request: NextRequest) {
       agenda: parsed.data.agenda || null,
       attendance_closes_at: parsed.data.attendanceClosesAt,
       created_by: user.id,
+      lateness_starts_at: parsed.data.latenessStartsAt,
       location: parsed.data.location || null,
       reminder_message: parsed.data.reminderMessage || null,
       starts_at: parsed.data.startsAt,
       title: parsed.data.title,
     })
-    .select("id, title, starts_at, location")
+    .select("id, title, starts_at, lateness_starts_at, location")
     .single();
 
   if (meetingError || !meeting) {
@@ -96,7 +97,13 @@ export async function POST(request: NextRequest) {
             dateStyle: "medium",
             timeStyle: "short",
           },
-        ).format(new Date(meeting.starts_at))}.${meeting.location ? ` Location: ${meeting.location}.` : ""} Please attend on time and mark your attendance from the member portal.`,
+        ).format(new Date(meeting.starts_at))}.${meeting.location ? ` Location: ${meeting.location}.` : ""} Lateness starts counting from ${new Intl.DateTimeFormat(
+          "en-NG",
+          {
+            dateStyle: "medium",
+            timeStyle: "short",
+          },
+        ).format(new Date(meeting.lateness_starts_at))}. Please attend on time and mark your attendance from the member portal.`,
         title: "New cooperative meeting",
         type: "meeting_update",
       })),

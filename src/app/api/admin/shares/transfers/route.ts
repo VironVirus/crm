@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isFinancialRecordManager } from "@/lib/auth/roles";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  composeTransactionReference,
+  generateTransactionReference,
+} from "@/lib/transaction-references";
 import { shareTransferSchema } from "@/lib/validation/shares";
 
 export const runtime = "nodejs";
@@ -92,11 +96,16 @@ export async function POST(request: NextRequest) {
     return jsonError("Unable to verify the selected members for transfer.", 500);
   }
 
+  const paymentReference = composeTransactionReference(
+    await generateTransactionReference(admin),
+    parsed.data.paymentReference,
+  );
+
   const { error: transferError } = await admin.rpc("transfer_member_shares", {
     p_from_member_id: parsed.data.fromMemberId,
     p_to_member_id: parsed.data.toMemberId,
     p_shares_count: parsed.data.sharesCount,
-    p_payment_reference: parsed.data.paymentReference ?? null,
+    p_payment_reference: paymentReference,
     p_created_by: user.id,
     p_notes: parsed.data.notes ?? null,
   });

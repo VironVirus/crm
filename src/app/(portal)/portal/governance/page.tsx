@@ -24,6 +24,7 @@ type MeetingRecord = {
   agenda: string | null;
   attendance_closes_at: string;
   id: string;
+  lateness_starts_at: string;
   location: string | null;
   reminder_message: string | null;
   starts_at: string;
@@ -33,6 +34,7 @@ type MeetingRecord = {
 
 type AttendanceRecord = {
   charge_amount: number | string | null;
+  is_approved: boolean;
   marked_at: string | null;
   meeting_id: string;
   status: "absent" | "late" | "present";
@@ -76,12 +78,12 @@ export default async function PortalGovernancePage() {
     admin
       .from("meetings")
       .select(
-        "id, title, agenda, location, starts_at, attendance_closes_at, reminder_message, status",
+        "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, status",
       )
       .order("starts_at", { ascending: false }),
     supabase
       .from("meeting_attendance")
-      .select("meeting_id, status, marked_at, charge_amount")
+      .select("meeting_id, status, marked_at, charge_amount, is_approved")
       .eq("member_id", user.id),
     supabase
       .from("member_charges")
@@ -110,12 +112,14 @@ export default async function PortalGovernancePage() {
 
       return {
         agenda: meeting.agenda,
+        attendanceApproved: attendance?.is_approved ?? null,
         attendanceClosesAt: meeting.attendance_closes_at,
         attendanceMarkedAt: attendance?.marked_at ?? null,
         attendanceStatus: attendance?.status ?? null,
         chargeAmount: parseMoney(charge?.amount ?? attendance?.charge_amount),
         chargeStatus: charge?.status ?? null,
         id: meeting.id,
+        latenessStartsAt: meeting.lateness_starts_at,
         location: meeting.location,
         reminderMessage: meeting.reminder_message,
         startsAt: meeting.starts_at,

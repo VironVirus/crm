@@ -92,6 +92,9 @@ export const adminMeetingSchema = z
     agenda: z.string().trim().max(2000).optional().nullable(),
     location: z.string().trim().max(160).optional().nullable(),
     startsAt: z.string().datetime("Choose a valid meeting start time."),
+    latenessStartsAt: z
+      .string()
+      .datetime("Choose a valid lateness start time."),
     attendanceClosesAt: z
       .string()
       .datetime("Choose a valid attendance close time."),
@@ -99,7 +102,26 @@ export const adminMeetingSchema = z
   })
   .superRefine((value, context) => {
     const startsAt = new Date(value.startsAt);
+    const latenessStartsAt = new Date(value.latenessStartsAt);
     const closesAt = new Date(value.attendanceClosesAt);
+
+    if (latenessStartsAt.getTime() < startsAt.getTime()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Lateness cannot start counting before the meeting start time.",
+        path: ["latenessStartsAt"],
+      });
+    }
+
+    if (closesAt.getTime() <= latenessStartsAt.getTime()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Attendance close time must be after the lateness start time.",
+        path: ["attendanceClosesAt"],
+      });
+    }
 
     if (closesAt.getTime() <= startsAt.getTime()) {
       context.addIssue({
@@ -112,6 +134,10 @@ export const adminMeetingSchema = z
 
 export const adminMeetingActionSchema = z.object({
   action: z.enum(["close", "cancel"]),
+});
+
+export const adminMeetingAttendanceApprovalSchema = z.object({
+  isApproved: z.boolean(),
 });
 
 export const shareConfigUpdateSchema = z.object({

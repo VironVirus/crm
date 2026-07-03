@@ -12,7 +12,6 @@ import {
   PaymentProcessingError,
 } from "@/lib/payment-processing";
 import {
-  buildFlutterwaveTxRef,
   formatPaymentTypeLabel,
   roundCurrency,
 } from "@/lib/payments";
@@ -21,6 +20,7 @@ import { ensureMemberRecord } from "@/lib/members";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { formatAccountTypeLabel } from "@/lib/savings";
+import { generateTransactionReference } from "@/lib/transaction-references";
 import { initiatePaymentSchema } from "@/lib/validation/payments";
 
 export const runtime = "nodejs";
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
   const memberTier = getMemberTier(memberRecord);
 
   const amount = roundCurrency(parsed.data.amount);
-  const txRef = buildFlutterwaveTxRef(profileRecord.member_number);
+  const txRef = await generateTransactionReference(admin);
   let description = formatPaymentTypeLabel(parsed.data.payment_type);
   let meta: Record<string, unknown> = {};
 

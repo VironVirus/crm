@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type Resolver } from "react-hook-form";
@@ -67,6 +67,19 @@ function FieldMessage({ message }: { message?: string }) {
   return <p className="text-xs text-rose-700 dark:text-rose-100">{message}</p>;
 }
 
+function FieldHint({ children }: { children: ReactNode }) {
+  return <p className="text-xs leading-5 text-muted-foreground">{children}</p>;
+}
+
+function getLoanProductSnapshot(values: LoanProductFormValues) {
+  return [
+    `Members can borrow between ${formatNaira(Math.max(values.minAmount || 0, 0))} and ${formatNaira(Math.max(values.maxAmount || 0, 0))}.`,
+    `${formatLoanInterestTypeLabel(values.interestType)} interest at ${Number(values.interestRate || 0).toFixed(2)}% across ${Math.max(values.minTenureMonths || 0, 0)} to ${Math.max(values.maxTenureMonths || 0, 0)} months.`,
+    `A ${Number(values.maxLoanToSavingsRatio || 0).toFixed(2)}x savings ratio means a member with ₦100,000 in savings can unlock up to ${formatNaira(Math.max((values.maxLoanToSavingsRatio || 0) * 100000, 0))} before the product cap applies.`,
+    `Processing fee is ${Number(values.processingFeeRate || 0).toFixed(2)}% and overdue penalty is ${Number(values.penaltyRate || 0).toFixed(2)}%.`,
+  ];
+}
+
 function LoanProductDialog({
   onCompleted,
   product,
@@ -101,11 +114,13 @@ function LoanProductDialog({
     handleSubmit,
     register,
     reset,
+    watch,
   } = useForm<LoanProductFormValues>({
     resolver:
       zodResolver(loanProductManagementSchema) as Resolver<LoanProductFormValues>,
     defaultValues,
   });
+  const watchedValues = watch();
 
   const submit = handleSubmit(async (values) => {
     setServerError(null);
@@ -172,9 +187,26 @@ function LoanProductDialog({
         </DialogHeader>
 
         <form className="grid gap-5 md:grid-cols-2" onSubmit={submit}>
+          <div className="rounded-3xl border border-emerald-400/15 bg-emerald-500/10 p-4 md:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-100">
+              Quick summary
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {getLoanProductSnapshot(watchedValues).map((summary) => (
+                <div
+                  key={summary}
+                  className="rounded-2xl border border-emerald-400/20 bg-background/70 px-4 py-3 text-sm text-foreground"
+                >
+                  {summary}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="name">Product name</Label>
             <Input id="name" placeholder="Salary advance" {...register("name")} />
+            <FieldHint>Use a short product name members will quickly recognize on the loan application page.</FieldHint>
             <FieldMessage message={errors.name?.message} />
           </div>
 
@@ -182,9 +214,10 @@ function LoanProductDialog({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="Short description of this product"
+              placeholder="Short member-facing description of this loan"
               {...register("description")}
             />
+            <FieldHint>This is the short overview members will read before they apply.</FieldHint>
             <FieldMessage message={errors.description?.message} />
           </div>
 
@@ -192,15 +225,17 @@ function LoanProductDialog({
             <Label htmlFor="termsSummary">Terms summary</Label>
             <Textarea
               id="termsSummary"
-              placeholder="Any special terms or notes for this loan product"
+              placeholder="Example: Available after 6 months of membership and one guarantor."
               {...register("termsSummary")}
             />
+            <FieldHint>Keep this brief. It should summarize who qualifies, any documents needed, and special limits.</FieldHint>
             <FieldMessage message={errors.termsSummary?.message} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="interestRate">Interest rate (%)</Label>
             <Input id="interestRate" step="0.01" type="number" {...register("interestRate")} />
+            <FieldHint>The annual percentage rate used when calculating the member&apos;s loan cost.</FieldHint>
             <FieldMessage message={errors.interestRate?.message} />
           </div>
 
@@ -214,18 +249,21 @@ function LoanProductDialog({
               <option value="flat">Flat</option>
               <option value="reducing_balance">Reducing balance</option>
             </select>
+            <FieldHint>Flat keeps the interest charge level. Reducing balance lowers interest as the loan is repaid.</FieldHint>
             <FieldMessage message={errors.interestType?.message} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="minAmount">Minimum amount</Label>
             <Input id="minAmount" step="0.01" type="number" {...register("minAmount")} />
+            <FieldHint>The smallest amount members can request on this product.</FieldHint>
             <FieldMessage message={errors.minAmount?.message} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="maxAmount">Maximum amount</Label>
             <Input id="maxAmount" step="0.01" type="number" {...register("maxAmount")} />
+            <FieldHint>The full product cap before any savings-ratio or operational limit is applied.</FieldHint>
             <FieldMessage message={errors.maxAmount?.message} />
           </div>
 
@@ -237,6 +275,7 @@ function LoanProductDialog({
               type="number"
               {...register("maximumDisbursableAmount")}
             />
+            <FieldHint>Use this when the product exists but you only want to release a smaller amount for now.</FieldHint>
             <FieldMessage message={errors.maximumDisbursableAmount?.message} />
           </div>
 
@@ -248,6 +287,7 @@ function LoanProductDialog({
               type="number"
               {...register("maxLoanToSavingsRatio")}
             />
+            <FieldHint>A value of 2 means savings of ₦50,000 can support up to ₦100,000, subject to the product cap.</FieldHint>
             <FieldMessage message={errors.maxLoanToSavingsRatio?.message} />
           </div>
 
@@ -258,6 +298,7 @@ function LoanProductDialog({
               type="number"
               {...register("minTenureMonths")}
             />
+            <FieldHint>The shortest repayment duration a member can choose.</FieldHint>
             <FieldMessage message={errors.minTenureMonths?.message} />
           </div>
 
@@ -268,6 +309,7 @@ function LoanProductDialog({
               type="number"
               {...register("maxTenureMonths")}
             />
+            <FieldHint>The longest repayment duration allowed for this product.</FieldHint>
             <FieldMessage message={errors.maxTenureMonths?.message} />
           </div>
 
@@ -279,6 +321,7 @@ function LoanProductDialog({
               type="number"
               {...register("processingFeeRate")}
             />
+            <FieldHint>A one-time percentage fee charged when the loan is booked or disbursed.</FieldHint>
             <FieldMessage message={errors.processingFeeRate?.message} />
           </div>
 
@@ -290,6 +333,7 @@ function LoanProductDialog({
               type="number"
               {...register("penaltyRate")}
             />
+            <FieldHint>The extra percentage applied when a repayment becomes overdue.</FieldHint>
             <FieldMessage message={errors.penaltyRate?.message} />
           </div>
 
