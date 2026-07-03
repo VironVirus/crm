@@ -7,6 +7,9 @@ const NOTIFICATION_TYPES = [
   "guarantor_invite",
   "due_reminder",
   "dividend_paid",
+  "meeting_update",
+  "attendance_charge",
+  "member_verified",
 ] as const;
 
 type NotificationType = (typeof NOTIFICATION_TYPES)[number];

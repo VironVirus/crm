@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import { COOPERATIVE_NAME } from "@/lib/brand";
+import { activateProtectedSession } from "@/lib/session-state";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { loginOtpVerificationSchema } from "@/lib/validation/auth";
 import {
   memberRegistrationSchema,
   type MemberRegistrationValues,
@@ -24,14 +26,23 @@ type RegistrationSuccess = {
   memberNumber: string;
 };
 
+type RegistrationFormResponse = {
+  email?: string;
+  fieldErrors?: Record<string, string[]>;
+  fullName?: string;
+  memberNumber?: string;
+  message?: string;
+  status?: "ready" | "resume";
+};
+
+type VerificationStatus = "idle" | "pending" | "confirmed";
+
 const defaultValues: MemberRegistrationValues = {
   address: "",
-  confirmPassword: "",
   dateOfBirth: "",
   email: "",
   fullName: "",
   occupation: "",
-  password: "",
   phone: "",
 };
 
@@ -43,13 +54,33 @@ function FieldMessage({ message }: { message?: string }) {
   return <p className="text-xs text-rose-700 dark:text-rose-200">{message}</p>;
 }
 
+function buildRegistrationFormData(values: MemberRegistrationValues) {
+  const body = new FormData();
+  body.set("fullName", values.fullName);
+  body.set("email", values.email);
+  body.set("phone", values.phone);
+  body.set("dateOfBirth", values.dateOfBirth);
+  body.set("address", values.address);
+  body.set("occupation", values.occupation);
+  return body;
+}
+
 export function MemberRegistrationForm() {
   const [success, setSuccess] = useState<RegistrationSuccess | null>(null);
+  const [registrationDraft, setRegistrationDraft] =
+    useState<MemberRegistrationValues | null>(null);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationStatus, setVerificationStatus] =
+    useState<VerificationStatus>("idle");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitPhase, setSubmitPhase] = useState<string | null>(null);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [isResendingCode, setIsResendingCode] = useState(false);
+  const [isFinalizingRegistration, setIsFinalizingRegistration] = useState(false);
 
   const {
-    formState: { errors, isSubmitting },
+    formState: { errors },
     handleSubmit,
     register,
     reset,
@@ -60,47 +91,59 @@ export function MemberRegistrationForm() {
     mode: "onTouched",
   });
 
-  const submitRegistration = handleSubmit(async (values) => {
-    setSubmitError(null);
-    setSubmitPhase("Creating your member account...");
+  function applyFieldErrors(fieldErrors?: Record<string, string[]>) {
+    if (!fieldErrors) {
+      return;
+    }
 
-    const body = new FormData();
-    body.set("fullName", values.fullName);
-    body.set("email", values.email);
-    body.set("phone", values.phone);
-    body.set("dateOfBirth", values.dateOfBirth);
-    body.set("address", values.address);
-    body.set("occupation", values.occupation);
-    body.set("password", values.password);
-    body.set("confirmPassword", values.confirmPassword);
+    Object.entries(fieldErrors).forEach(([fieldName, messages]) => {
+      const firstMessage = messages?.[0];
+
+      if (firstMessage) {
+        setError(fieldName as keyof MemberRegistrationValues, {
+          type: "server",
+          message: firstMessage,
+        });
+      }
+    });
+  }
+
+  async function finalizeRegistration(values: MemberRegistrationValues) {
+    setSubmitError(null);
+    setStatusMessage("Finishing your cooperative registration...");
+    setIsFinalizingRegistration(true);
 
     try {
-      const response = await fetch("/api/member-registration", {
+      const supabase = createBrowserSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setVerificationStatus("pending");
+        setStatusMessage(null);
+        setSubmitError(
+          "Your verification session expired before we could finish registration. Please request a new code.",
+        );
+        return;
+      }
+
+      const response = await fetch("/api/member-registration/complete", {
         method: "POST",
-        body,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
       });
 
       const payload = (await response.json().catch(() => null)) as
-        | (RegistrationSuccess & {
-            fieldErrors?: Record<string, string[]>;
-            message?: string;
-          })
+        | RegistrationFormResponse
         | null;
 
       if (!response.ok) {
-        if (payload?.fieldErrors) {
-          Object.entries(payload.fieldErrors).forEach(([fieldName, messages]) => {
-            const firstMessage = messages?.[0];
-
-            if (firstMessage) {
-              setError(fieldName as keyof MemberRegistrationValues, {
-                type: "server",
-                message: firstMessage,
-              });
-            }
-          });
-        }
-
+        setStatusMessage(null);
+        applyFieldErrors(payload?.fieldErrors);
         setSubmitError(
           payload?.message ??
             "We could not complete your registration right now. Please try again.",
@@ -108,16 +151,183 @@ export function MemberRegistrationForm() {
         return;
       }
 
-      setSuccess(payload);
+      activateProtectedSession();
+      setSuccess({
+        email: payload?.email ?? values.email,
+        fullName: payload?.fullName ?? values.fullName,
+        memberNumber: payload?.memberNumber ?? "",
+      });
+      setRegistrationDraft(null);
+      setVerificationCode("");
+      setVerificationStatus("idle");
+      setStatusMessage(null);
       reset(defaultValues);
     } catch {
+      setStatusMessage(null);
       setSubmitError(
         "The registration request could not be completed. Check your connection and try again.",
       );
     } finally {
-      setSubmitPhase(null);
+      setIsFinalizingRegistration(false);
+    }
+  }
+
+  const submitRegistration = handleSubmit(async (values) => {
+    setSubmitError(null);
+    setStatusMessage("Sending your email verification code...");
+    setIsSendingCode(true);
+
+    try {
+      const response = await fetch("/api/member-registration", {
+        method: "POST",
+        body: buildRegistrationFormData(values),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | RegistrationFormResponse
+        | null;
+
+      if (!response.ok) {
+        applyFieldErrors(payload?.fieldErrors);
+        setStatusMessage(null);
+        setSubmitError(
+          payload?.message ??
+            "We could not prepare your registration right now. Please try again.",
+        );
+        return;
+      }
+
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: values.email,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            address: values.address,
+            date_of_birth: values.dateOfBirth,
+            full_name: values.fullName,
+            occupation: values.occupation,
+            phone: values.phone,
+          },
+        },
+      });
+
+      if (error) {
+        setStatusMessage(null);
+        setSubmitError(error.message);
+        return;
+      }
+
+      setRegistrationDraft(values);
+      setVerificationCode("");
+      setVerificationStatus("pending");
+      setStatusMessage(
+        payload?.status === "resume"
+          ? `We found your pending registration and sent a fresh 6-digit code to ${values.email}.`
+          : `A 6-digit verification code has been sent to ${values.email}.`,
+      );
+    } catch {
+      setStatusMessage(null);
+      setSubmitError(
+        "The registration request could not be completed. Check your connection and try again.",
+      );
+    } finally {
+      setIsSendingCode(false);
     }
   });
+
+  async function verifyRegistrationCode() {
+    if (!registrationDraft) {
+      setVerificationStatus("idle");
+      setSubmitError("Please enter your details again so we can continue.");
+      return;
+    }
+
+    setSubmitError(null);
+    setStatusMessage(null);
+
+    const parsed = loginOtpVerificationSchema.safeParse({
+      email: registrationDraft.email,
+      token: verificationCode,
+    });
+
+    if (!parsed.success) {
+      setSubmitError(
+        parsed.error.issues[0]?.message ??
+          "Enter the 6-digit code that was sent to your email.",
+      );
+      return;
+    }
+
+    setIsVerifyingCode(true);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase.auth.verifyOtp({
+        email: parsed.data.email,
+        token: parsed.data.token,
+        type: "email",
+      });
+
+      if (error) {
+        setSubmitError(error.message);
+        return;
+      }
+
+      setVerificationStatus("confirmed");
+      await finalizeRegistration(registrationDraft);
+    } catch {
+      setSubmitError(
+        "We could not verify your email code right now. Please try again.",
+      );
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  }
+
+  async function resendVerificationCode() {
+    if (!registrationDraft) {
+      setVerificationStatus("idle");
+      setSubmitError("Please enter your details again so we can continue.");
+      return;
+    }
+
+    setSubmitError(null);
+    setStatusMessage(null);
+    setIsResendingCode(true);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: registrationDraft.email,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            address: registrationDraft.address,
+            date_of_birth: registrationDraft.dateOfBirth,
+            full_name: registrationDraft.fullName,
+            occupation: registrationDraft.occupation,
+            phone: registrationDraft.phone,
+          },
+        },
+      });
+
+      if (error) {
+        setSubmitError(error.message);
+        return;
+      }
+
+      setStatusMessage(
+        `A fresh 6-digit verification code has been sent to ${registrationDraft.email}.`,
+      );
+    } catch {
+      setSubmitError(
+        "We could not resend your verification code right now. Please try again.",
+      );
+    } finally {
+      setIsResendingCode(false);
+    }
+  }
 
   if (success) {
     return (
@@ -139,23 +349,150 @@ export function MemberRegistrationForm() {
             <p className="mt-3 font-['Outfit'] text-3xl font-semibold text-foreground">
               {success.memberNumber}
             </p>
-            <p className="mt-2 text-sm text-emerald-100/80">{success.email}</p>
+            <p className="mt-2 text-sm text-emerald-900/80 dark:text-emerald-100/80">
+              {success.email}
+            </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button asChild size="lg">
-              <Link href="/login">Go to sign in</Link>
-            </Button>
+          <Button asChild className="w-full" size="lg">
+            <Link href="/portal">Open dashboard</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (verificationStatus !== "idle" && registrationDraft) {
+    const isPendingVerification = verificationStatus === "pending";
+
+    return (
+      <Card className="bg-card/90 shadow-[0_30px_80px_rgba(2,6,23,0.12)] backdrop-blur dark:shadow-[0_30px_80px_rgba(2,6,23,0.55)]">
+        <CardHeader className="items-center space-y-4 text-center">
+          <BrandMark priority size="lg" variant="full" />
+          <CardTitle className="font-['Outfit'] text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+            Confirm your email to finish registration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="rounded-3xl border border-border bg-secondary p-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-200">
+                {isPendingVerification ? (
+                  <Mail className="h-5 w-5" />
+                ) : (
+                  <ShieldCheck className="h-5 w-5" />
+                )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">
+                  {isPendingVerification
+                    ? "Check your email for the 6-digit code."
+                    : "Your email has been confirmed."}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isPendingVerification
+                    ? `We sent the verification code to ${registrationDraft.email}.`
+                    : "Finish registration to generate the member number and open the dashboard."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {isPendingVerification ? (
+            <div className="space-y-2">
+              <Label htmlFor="registrationOtpCode">Verification code</Label>
+              <Input
+                id="registrationOtpCode"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                placeholder="6-digit code"
+                value={verificationCode}
+                onChange={(event) => setVerificationCode(event.target.value)}
+              />
+            </div>
+          ) : null}
+
+          {statusMessage ? (
+            <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-100">
+              {statusMessage}
+            </div>
+          ) : null}
+
+          {submitError ? (
+            <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
+              {submitError}
+            </div>
+          ) : null}
+
+          {isPendingVerification ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                className="w-full"
+                disabled={isVerifyingCode}
+                onClick={() => void verifyRegistrationCode()}
+                type="button"
+              >
+                {isVerifyingCode ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Verify and finish
+                  </>
+                )}
+              </Button>
+              <Button
+                className="w-full"
+                disabled={isResendingCode}
+                onClick={() => void resendVerificationCode()}
+                type="button"
+                variant="secondary"
+              >
+                {isResendingCode ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Resending...
+                  </>
+                ) : (
+                  "Resend code"
+                )}
+              </Button>
+              <Button
+                className="sm:col-span-2"
+                onClick={() => {
+                  setSubmitError(null);
+                  setStatusMessage(null);
+                  setVerificationCode("");
+                  setVerificationStatus("idle");
+                  setRegistrationDraft(null);
+                }}
+                type="button"
+                variant="outline"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Edit your details
+              </Button>
+            </div>
+          ) : (
             <Button
               className="w-full"
-              onClick={() => setSuccess(null)}
-              size="lg"
+              disabled={isFinalizingRegistration}
+              onClick={() => void finalizeRegistration(registrationDraft)}
               type="button"
-              variant="secondary"
             >
-              Register another member
+              {isFinalizingRegistration ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Finishing registration...
+                </>
+              ) : (
+                "Finish registration"
+              )}
             </Button>
-          </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -232,33 +569,16 @@ export function MemberRegistrationForm() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border bg-secondary p-5">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">Account access</p>
-            </div>
-
-            <div className="mt-4 grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <PasswordInput
-                  id="password"
-                  placeholder="Password"
-                  {...register("password")}
-                />
-                <FieldMessage message={errors.password?.message} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm password</Label>
-                <PasswordInput
-                  id="confirmPassword"
-                  placeholder="Confirm password"
-                  {...register("confirmPassword")}
-                />
-                <FieldMessage message={errors.confirmPassword?.message} />
-              </div>
-            </div>
+          <div className="rounded-3xl border border-border bg-secondary p-4 text-sm text-muted-foreground">
+            We will send a 6-digit verification code to your email to finish your
+            registration securely.
           </div>
+
+          {statusMessage ? (
+            <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-100">
+              {statusMessage}
+            </div>
+          ) : null}
 
           {submitError ? (
             <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
@@ -266,28 +586,23 @@ export function MemberRegistrationForm() {
             </div>
           ) : null}
 
-          {submitPhase ? (
-            <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-100">
-              {submitPhase}
-            </div>
-          ) : null}
-
-          <div className="flex flex-col gap-3 border-t border-border pt-2 sm:flex-row sm:items-center sm:justify-end">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild type="button" variant="outline">
-                <Link href="/login">Back to sign in</Link>
-              </Button>
-              <Button disabled={isSubmitting} type="submit">
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Create account"
-                )}
-              </Button>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button className="w-full" disabled={isSendingCode} type="submit" size="lg">
+              {isSendingCode ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending code...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Continue with email code
+                </>
+              )}
+            </Button>
+            <Button asChild className="w-full" size="lg" variant="secondary">
+              <Link href="/login">Go to login</Link>
+            </Button>
           </div>
         </form>
       </CardContent>

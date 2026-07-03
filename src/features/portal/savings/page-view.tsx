@@ -41,7 +41,7 @@ import {
   type SavingsTransactionRow,
 } from "@/lib/savings";
 
-const TRANSACTIONS_PER_PAGE = 8;
+const TRANSACTIONS_PER_PAGE = 10;
 
 function getTransactionBadgeClasses(type: SavingsTransactionRow["transactionType"]) {
   if (type === "withdrawal") {
@@ -88,15 +88,15 @@ export default function MemberSavingsPageView({
   );
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
+    <div className="space-y-4">
+      <section className="flex flex-col gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 lg:flex-row lg:items-end lg:justify-between sm:rounded-[30px] sm:p-5">
+        <div className="space-y-2">
           <Badge className="w-fit">Savings Overview</Badge>
-          <div className="space-y-2">
-            <h2 className="font-['Outfit'] text-3xl font-semibold text-white">
+          <div className="space-y-1.5">
+            <h2 className="font-['Outfit'] text-2xl font-semibold text-white sm:text-[2rem]">
               Your savings position
             </h2>
-            <p className="max-w-2xl text-sm leading-6 text-slate-300">
+            <p className="max-w-2xl text-xs leading-5 text-slate-300 sm:text-sm sm:leading-6">
               {memberName}
               {memberNumber ? ` · ${memberNumber}` : ""}. Review your balance
               across savings types, track recent transactions, and watch your
@@ -105,14 +105,14 @@ export default function MemberSavingsPageView({
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-emerald-400/15 bg-emerald-500/10 px-5 py-4">
+        <div className="rounded-[22px] border border-emerald-400/15 bg-emerald-500/10 px-4 py-3.5 sm:px-5 sm:py-4">
           <p className="text-xs uppercase tracking-[0.28em] text-emerald-200">
             Total balance
           </p>
-          <p className="mt-2 font-['Outfit'] text-3xl font-semibold text-white">
+          <p className="mt-1.5 font-['Outfit'] text-2xl font-semibold text-white sm:text-3xl">
             {formatNaira(totalSavingsBalance)}
           </p>
-          <p className="mt-1 text-sm text-slate-300">
+          <p className="mt-1 text-xs text-slate-300 sm:text-sm">
             Across {accounts.length} active savings account
             {accounts.length === 1 ? "" : "s"}
           </p>
@@ -120,92 +120,92 @@ export default function MemberSavingsPageView({
       </section>
 
       {dataError ? (
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-100 sm:text-sm">
           {dataError}
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center justify-between gap-3">
               <Badge className="w-fit">Mandatory</Badge>
               <PiggyBank className="h-5 w-5 text-emerald-200" />
             </div>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(summary.mandatory)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               Contributions that strengthen your long-term eligibility.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center justify-between gap-3">
               <Badge className="w-fit" variant="secondary">
                 Voluntary
               </Badge>
               <Wallet className="h-5 w-5 text-sky-200" />
             </div>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(summary.voluntary)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               Flexible savings you can build on over time.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center justify-between gap-3">
               <Badge className="w-fit" variant="outline">
                 Fixed deposit
               </Badge>
               <Landmark className="h-5 w-5 text-amber-200" />
             </div>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(summary.fixed_deposit)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               Locked funds growing toward their maturity date.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <Badge className="w-fit" variant="secondary">
               Recent activity
             </Badge>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {transactions.length > 0
                 ? formatDisplayDate(transactions[0].transactionDate)
                 : "No activity"}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               Latest transaction date recorded on your savings profile.
             </CardDescription>
           </CardHeader>
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+      <section className="grid gap-3 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="bg-white/[0.04]">
-          <CardHeader>
+          <CardHeader className="p-4 pb-3">
             <Badge className="w-fit">12-month trend</Badge>
-            <CardTitle className="font-['Outfit'] text-2xl">
+            <CardTitle className="font-['Outfit'] text-xl sm:text-2xl">
               Savings growth over time
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               Your total savings balance across all savings types for the last
               twelve months.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[320px]">
+          <CardContent className="p-4 pt-0">
+            <div className="h-[260px] sm:h-[300px]">
               <ResponsiveContainer height="100%" width="100%">
                 <AreaChart data={growthSeries}>
                   <defs>
@@ -252,23 +252,23 @@ export default function MemberSavingsPageView({
         </Card>
 
         <Card className="bg-white/[0.04]">
-          <CardHeader>
+          <CardHeader className="p-4 pb-3">
             <Badge className="w-fit" variant="secondary">
               Account breakdown
             </Badge>
-            <CardTitle className="font-['Outfit'] text-2xl">
+            <CardTitle className="font-['Outfit'] text-xl sm:text-2xl">
               Your savings accounts
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               A quick look at each active savings account attached to your profile.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2.5 p-4 pt-0">
             {accounts.length > 0 ? (
               accounts.map((account) => (
                 <div
                   key={account.id}
-                  className="rounded-[24px] border border-white/10 bg-slate-950/40 px-4 py-4"
+                  className="rounded-[20px] border border-white/10 bg-slate-950/40 px-3.5 py-3.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <Badge
@@ -286,10 +286,10 @@ export default function MemberSavingsPageView({
                       {account.status}
                     </span>
                   </div>
-                  <p className="mt-3 font-['Outfit'] text-2xl font-semibold text-white">
+                  <p className="mt-2.5 font-['Outfit'] text-xl font-semibold text-white sm:text-2xl">
                     {formatNaira(account.balance)}
                   </p>
-                  <div className="mt-3 grid gap-2 text-sm text-slate-300">
+                  <div className="mt-2.5 grid gap-1.5 text-xs text-slate-300 sm:text-sm">
                     <p>Interest rate: {account.interestRate.toFixed(2)}%</p>
                     <p>
                       Maturity:{" "}
@@ -301,7 +301,7 @@ export default function MemberSavingsPageView({
                 </div>
               ))
             ) : (
-              <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] px-4 py-10 text-center text-sm text-slate-400">
+              <div className="rounded-[20px] border border-dashed border-white/10 bg-white/[0.03] px-4 py-8 text-center text-xs text-slate-400 sm:text-sm">
                 No savings accounts have been opened on your profile yet.
               </div>
             )}
@@ -310,14 +310,14 @@ export default function MemberSavingsPageView({
       </section>
 
       <Card className="bg-white/[0.04]">
-        <CardHeader className="gap-3 border-b border-white/10">
+        <CardHeader className="gap-3 border-b border-white/10 p-4">
           <Badge className="w-fit">Transaction history</Badge>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <CardTitle className="font-['Outfit'] text-2xl">
+              <CardTitle className="font-['Outfit'] text-xl sm:text-2xl">
                 Posted savings transactions
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs leading-5 sm:text-sm">
                 Page {currentPage} of {pageCount} · {transactions.length} total
                 transaction{transactions.length === 1 ? "" : "s"}
               </CardDescription>
@@ -351,35 +351,41 @@ export default function MemberSavingsPageView({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Balance After</TableHead>
-                <TableHead>Reference</TableHead>
+                <TableHead className="h-10 px-3 text-xs">Date</TableHead>
+                <TableHead className="h-10 px-3 text-xs">Type</TableHead>
+                <TableHead className="h-10 px-3 text-xs">Account</TableHead>
+                <TableHead className="h-10 px-3 text-xs">Amount</TableHead>
+                <TableHead className="h-10 px-3 text-xs">Balance After</TableHead>
+                <TableHead className="h-10 px-3 text-xs">Reference</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedTransactions.length > 0 ? (
                 paginatedTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell>{formatDisplayDate(transaction.transactionDate)}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-3 py-2.5 text-sm">
+                      {formatDisplayDate(transaction.transactionDate)}
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ${getTransactionBadgeClasses(transaction.transactionType)}`}
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getTransactionBadgeClasses(transaction.transactionType)}`}
                       >
                         {formatTransactionTypeLabel(transaction.transactionType)}
                       </span>
                     </TableCell>
-                    <TableCell>{formatAccountTypeLabel(transaction.accountType)}</TableCell>
-                    <TableCell className="font-medium text-white">
+                    <TableCell className="px-3 py-2.5 text-sm">
+                      {formatAccountTypeLabel(transaction.accountType)}
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-sm font-medium text-white">
                       {formatNaira(transaction.amount)}
                     </TableCell>
-                    <TableCell>{formatNaira(transaction.balanceAfter)}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
+                    <TableCell className="px-3 py-2.5 text-sm">
+                      {formatNaira(transaction.balanceAfter)}
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-sm">
+                      <div className="space-y-0.5">
                         <p>{transaction.paymentReference ?? "No reference"}</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-[11px] text-slate-400">
                           {transaction.narration ?? "No narration"}
                         </p>
                       </div>
@@ -388,7 +394,10 @@ export default function MemberSavingsPageView({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell className="py-10 text-center text-slate-400" colSpan={6}>
+                  <TableCell
+                    className="px-3 py-8 text-center text-xs text-slate-400 sm:text-sm"
+                    colSpan={6}
+                  >
                     No savings transactions have been posted yet.
                   </TableCell>
                 </TableRow>

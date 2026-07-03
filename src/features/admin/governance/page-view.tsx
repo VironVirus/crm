@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm, type Resolver } from "react-hook-form";
 import {
   CalendarClock,
+  ChevronDown,
   CheckCircle2,
   ClipboardList,
   Loader2,
@@ -36,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  groupMeetingsByDate,
   formatMeetingDateTime,
   getAttendanceStatusLabel,
   getAttendanceStatusTone,
@@ -279,7 +281,7 @@ function MeetingFormDialog({
       open={open}
     >
       <DialogTrigger asChild>
-        <Button variant={meeting ? "secondary" : "default"}>
+        <Button size="sm" variant={meeting ? "secondary" : "default"}>
           {meeting ? (
             <>
               <Pencil className="mr-2 h-4 w-4" />
@@ -492,6 +494,7 @@ function MeetingActionButton({
       <Button
         disabled={isSubmitting}
         onClick={() => void handleAction()}
+        size="sm"
         type="button"
         variant={variant}
       >
@@ -564,7 +567,12 @@ function AttendanceApprovalButton({
 
   return (
     <div className="space-y-2">
-      <Button disabled={isSubmitting} onClick={() => void handleApprove()} type="button">
+      <Button
+        disabled={isSubmitting}
+        onClick={() => void handleApprove()}
+        size="sm"
+        type="button"
+      >
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -592,12 +600,12 @@ function MeetingCard({
   onCompleted: (message: string) => void;
 }) {
   return (
-    <Card>
-      <CardHeader className="space-y-4">
+    <Card className="rounded-[22px]">
+      <CardHeader className="space-y-3 p-4 pb-3 sm:p-5 sm:pb-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+              <CardTitle className="font-['Outfit'] text-lg text-foreground sm:text-xl">
                 {meeting.title}
               </CardTitle>
               <Badge
@@ -607,7 +615,7 @@ function MeetingCard({
                 {getMeetingStatusLabel(meeting.status)}
               </Badge>
             </div>
-            <CardDescription className="text-sm leading-6">
+            <CardDescription className="text-xs leading-5 sm:text-sm">
               {meeting.agenda || "No agenda note added for this meeting yet."}
             </CardDescription>
           </div>
@@ -634,99 +642,99 @@ function MeetingCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+      <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-5">
+          <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Starts
             </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
+            <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
               {formatMeetingDateTime(meeting.startsAt)}
             </p>
           </div>
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+          <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Late from
             </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
+            <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
               {formatMeetingDateTime(meeting.latenessStartsAt)}
             </p>
           </div>
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+          <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Attendance closes
             </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
+            <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
               {formatMeetingDateTime(meeting.attendanceClosesAt)}
             </p>
           </div>
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+          <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Venue
             </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
+            <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
               {meeting.location || "Not set"}
             </p>
           </div>
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
+          <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Pending charges
             </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
+            <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
               {formatNaira(meeting.pendingChargesAmount)}
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-4">
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-100">
               Present
             </p>
-            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
+            <p className="mt-1.5 font-['Outfit'] text-xl font-semibold text-foreground">
               {meeting.presentCount}
             </p>
           </div>
-          <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-4">
+          <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-amber-800 dark:text-amber-100">
               Late
             </p>
-            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
+            <p className="mt-1.5 font-['Outfit'] text-xl font-semibold text-foreground">
               {meeting.lateCount}
             </p>
           </div>
-          <div className="rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-4">
+          <div className="rounded-2xl border border-rose-300/20 bg-rose-500/10 px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-rose-700 dark:text-rose-100">
               Absent
             </p>
-            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
+            <p className="mt-1.5 font-['Outfit'] text-xl font-semibold text-foreground">
               {meeting.absentCount}
             </p>
           </div>
-          <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 px-4 py-4">
+          <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 px-3 py-3">
             <p className="text-xs uppercase tracking-[0.22em] text-sky-700 dark:text-sky-100">
               Awaiting approval
             </p>
-            <p className="mt-2 font-['Outfit'] text-2xl font-semibold text-foreground">
+            <p className="mt-1.5 font-['Outfit'] text-xl font-semibold text-foreground">
               {meeting.pendingApprovalCount}
             </p>
           </div>
         </div>
 
         {meeting.reminderMessage ? (
-          <div className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-secondary px-3 py-3 text-xs text-muted-foreground sm:text-sm">
             <span className="font-medium text-foreground">Reminder note:</span>{" "}
             {meeting.reminderMessage}
           </div>
         ) : null}
 
-        <div className="rounded-3xl border border-border bg-secondary/70 p-4">
+        <div className="rounded-3xl border border-border bg-secondary/70 p-3.5 sm:p-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-['Outfit'] text-xl font-semibold text-foreground">
+              <p className="font-['Outfit'] text-lg font-semibold text-foreground sm:text-xl">
                 Meeting report
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground sm:text-sm">
                 {meeting.attendees.length > 0
                   ? `${meeting.attendees.length} attendance record${meeting.attendees.length === 1 ? "" : "s"} captured for this meeting.`
                   : "Attendance records will appear here as members mark attendance."}
@@ -738,16 +746,16 @@ function MeetingCard({
           </div>
 
           {meeting.attendees.length > 0 ? (
-            <div className="mt-4 grid gap-3">
+            <div className="mt-3 grid gap-2.5">
               {meeting.attendees.map((attendance) => (
                 <div
                   key={attendance.id}
-                  className="rounded-2xl border border-border bg-card px-4 py-4"
+                  className="rounded-2xl border border-border bg-card px-3 py-3"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-foreground">
+                        <p className="text-sm font-medium text-foreground">
                           {attendance.memberName}
                         </p>
                         {attendance.memberNumber ? (
@@ -770,7 +778,7 @@ function MeetingCard({
                           {attendance.isApproved ? "Approved" : "Pending approval"}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground sm:text-sm">
                         {attendance.markedAt
                           ? `Marked on ${formatMeetingDateTime(attendance.markedAt)}.`
                           : "Auto-marked absent when the meeting ended."}{" "}
@@ -805,6 +813,62 @@ function MeetingCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function MeetingDateGroup({
+  meetings,
+  onCompleted,
+  title,
+}: {
+  meetings: GovernanceMeetingRow[];
+  onCompleted: (message: string) => void;
+  title: string;
+}) {
+  if (meetings.length === 0) {
+    return null;
+  }
+
+  const groupedMeetings = groupMeetingsByDate(meetings);
+
+  return (
+    <div className="space-y-3">
+      {groupedMeetings.map((group, index) => (
+        <details
+          className="group overflow-hidden rounded-[22px] border border-border bg-card shadow-lg shadow-black/5 dark:shadow-black/20"
+          key={`${title}-${group.dateKey}`}
+          open={index === 0}
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 marker:hidden sm:px-5">
+            <div className="space-y-1">
+              <p className="font-['Outfit'] text-lg font-semibold text-foreground">
+                {group.label}
+              </p>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                {group.meetings.length} meeting
+                {group.meetings.length === 1 ? "" : "s"} on this date
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{group.meetings.length}</Badge>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+            </div>
+          </summary>
+
+          <div className="border-t border-border px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
+            <div className="space-y-3">
+              {group.meetings.map((meeting) => (
+                <MeetingCard
+                  key={meeting.id}
+                  meeting={meeting}
+                  onCompleted={onCompleted}
+                />
+              ))}
+            </div>
+          </div>
+        </details>
+      ))}
+    </div>
   );
 }
 
@@ -866,24 +930,25 @@ export default function AdminGovernancePageView({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[24px] border border-border bg-card p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
+    <div className="space-y-4">
+      <section className="rounded-[24px] border border-border bg-card p-4 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:rounded-[32px] sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
             <Badge className="w-fit">Governance</Badge>
-            <h2 className="max-w-3xl font-['Outfit'] text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
+            <h2 className="max-w-3xl font-['Outfit'] text-xl font-semibold leading-tight text-foreground sm:text-2xl">
               Meetings, attendance, and attendance charges
             </h2>
-            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+            <p className="max-w-3xl text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-5">
               Late arrivals attract {formatNaira(MEETING_LATE_FEE)} while absences attract{" "}
               {formatNaira(MEETING_ABSENT_FEE)}.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <Button
               disabled={isSendingReminders}
               onClick={() => void handleSendReminders()}
+              size="sm"
               type="button"
               variant="secondary"
             >
@@ -904,43 +969,43 @@ export default function AdminGovernancePageView({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Card>
-          <CardHeader>
-            <CardDescription>Scheduled meetings</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
+          <CardHeader className="p-4">
+            <CardDescription className="text-xs">Scheduled meetings</CardDescription>
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               {totals.scheduled}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader>
-            <CardDescription>Closed meetings</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
+          <CardHeader className="p-4">
+            <CardDescription className="text-xs">Closed meetings</CardDescription>
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               {totals.closed}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader>
-            <CardDescription>Pending approvals</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
+          <CardHeader className="p-4">
+            <CardDescription className="text-xs">Pending approvals</CardDescription>
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               {totals.pendingApprovals}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader>
-            <CardDescription>Attendance charges</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
+          <CardHeader className="p-4">
+            <CardDescription className="text-xs">Attendance charges</CardDescription>
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               {totals.pendingChargesCount}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card className="border-rose-400/20 bg-rose-500/10">
-          <CardHeader>
-            <CardDescription>Pending charge value</CardDescription>
-            <CardTitle className="font-['Outfit'] text-3xl text-foreground">
+          <CardHeader className="p-4">
+            <CardDescription className="text-xs">Pending charge value</CardDescription>
+            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
               {formatNaira(totals.pendingChargesAmount)}
             </CardTitle>
           </CardHeader>
@@ -959,29 +1024,27 @@ export default function AdminGovernancePageView({
         </div>
       ) : null}
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-5 w-5 text-emerald-700 dark:text-emerald-100" />
-          <h3 className="font-['Outfit'] text-2xl font-semibold text-foreground">
+          <h3 className="font-['Outfit'] text-xl font-semibold text-foreground">
             Scheduled meetings
           </h3>
         </div>
 
         {scheduledRows.length > 0 ? (
-          scheduledRows.map((meeting) => (
-            <MeetingCard
-              key={meeting.id}
-              meeting={meeting}
-              onCompleted={setFeedbackMessage}
-            />
-          ))
+          <MeetingDateGroup
+            meetings={scheduledRows}
+            onCompleted={setFeedbackMessage}
+            title="scheduled"
+          />
         ) : (
           <Card>
-            <CardHeader>
-              <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+            <CardHeader className="p-4">
+              <CardTitle className="font-['Outfit'] text-xl text-foreground">
                 No scheduled meetings right now
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Create the next meeting and it will appear here for editing and live attendance tracking.
               </CardDescription>
             </CardHeader>
@@ -989,29 +1052,27 @@ export default function AdminGovernancePageView({
         )}
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-sky-700 dark:text-sky-100" />
-          <h3 className="font-['Outfit'] text-2xl font-semibold text-foreground">
+          <h3 className="font-['Outfit'] text-xl font-semibold text-foreground">
             Meeting reports
           </h3>
         </div>
 
         {historyRows.length > 0 ? (
-          historyRows.map((meeting) => (
-            <MeetingCard
-              key={meeting.id}
-              meeting={meeting}
-              onCompleted={setFeedbackMessage}
-            />
-          ))
+          <MeetingDateGroup
+            meetings={historyRows}
+            onCompleted={setFeedbackMessage}
+            title="history"
+          />
         ) : (
           <Card>
-            <CardHeader>
-              <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+            <CardHeader className="p-4">
+              <CardTitle className="font-['Outfit'] text-xl text-foreground">
                 No meeting history yet
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Closed and cancelled meetings will stay here with their attendance reports.
               </CardDescription>
             </CardHeader>
@@ -1021,14 +1082,14 @@ export default function AdminGovernancePageView({
 
       {totals.pendingApprovals > 0 ? (
         <Card className="border-amber-300/20 bg-amber-400/10">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center gap-3">
               <ShieldAlert className="h-5 w-5 text-amber-800 dark:text-amber-100" />
               <div>
-                <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+                <CardTitle className="font-['Outfit'] text-xl text-foreground">
                   Attendance approvals waiting
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Review and approve marked attendance so the meeting report is fully confirmed.
                 </CardDescription>
               </div>

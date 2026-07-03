@@ -125,8 +125,8 @@ export default function AdminSavingsPageView({
           </button>
         ),
         cell: ({ row }) => (
-          <div className="space-y-1">
-            <p className="font-medium text-white">{row.original.memberName}</p>
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-white">{row.original.memberName}</p>
             <p className="text-xs text-slate-400">
               {row.original.memberNumber ?? "Member number pending"} ·{" "}
               {row.original.memberEmail}
@@ -157,7 +157,7 @@ export default function AdminSavingsPageView({
         ),
         cell: ({ row }) => (
           <div>
-            <p className="font-medium text-white">
+            <p className="text-sm font-medium text-white">
               {formatNaira(row.original.balance)}
             </p>
             <p className="text-xs text-slate-400">
@@ -260,15 +260,15 @@ export default function AdminSavingsPageView({
   };
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-3xl space-y-3">
+    <div className="space-y-4">
+      <section className="flex flex-col gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 lg:flex-row lg:items-end lg:justify-between sm:p-5">
+        <div className="max-w-3xl space-y-2">
           <Badge className="w-fit">Savings Management</Badge>
-          <div className="space-y-2">
-            <h2 className="font-['Outfit'] text-3xl font-semibold text-white">
+          <div className="space-y-1.5">
+            <h2 className="font-['Outfit'] text-2xl font-semibold text-white sm:text-[1.75rem]">
               Member savings operations
             </h2>
-            <p className="max-w-2xl text-sm leading-6 text-slate-300">
+            <p className="max-w-2xl text-xs leading-5 text-slate-300 sm:text-sm sm:leading-5">
               Track every member savings account, review balances by savings type,
               and post deposits or withdrawals directly into the cooperative
               ledger.
@@ -276,12 +276,16 @@ export default function AdminSavingsPageView({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={() => setDepositOpen(true)}>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button onClick={() => setDepositOpen(true)} size="sm">
             <PlusCircle className="mr-2 h-4 w-4" />
             Record Deposit
           </Button>
-          <Button onClick={() => setWithdrawalOpen(true)} variant="secondary">
+          <Button
+            onClick={() => setWithdrawalOpen(true)}
+            size="sm"
+            variant="secondary"
+          >
             <MinusCircle className="mr-2 h-4 w-4" />
             Record Withdrawal
           </Button>
@@ -300,63 +304,63 @@ export default function AdminSavingsPageView({
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <Badge className="w-fit">Total portfolio</Badge>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(totalSavingsBalance)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5">
               Combined savings balance across all active member accounts.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center justify-between gap-3">
               <Badge className="w-fit">Mandatory</Badge>
               <PiggyBank className="h-5 w-5 text-emerald-200" />
             </div>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(summary.mandatory)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5">
               Long-term member contributions committed to the society.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center justify-between gap-3">
               <Badge className="w-fit" variant="secondary">
                 Voluntary
               </Badge>
               <Wallet className="h-5 w-5 text-sky-200" />
             </div>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(summary.voluntary)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5">
               Flexible member balances available for additional savings.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="bg-white/[0.06]">
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex items-center justify-between gap-3">
               <Badge className="w-fit" variant="outline">
                 Fixed deposit
               </Badge>
               <Landmark className="h-5 w-5 text-amber-200" />
             </div>
-            <CardTitle className="font-['Outfit'] text-3xl">
+            <CardTitle className="font-['Outfit'] text-2xl">
               {formatNaira(summary.fixed_deposit)}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs leading-5">
               Locked savings positions currently earning deposit returns.
             </CardDescription>
           </CardHeader>
@@ -364,17 +368,17 @@ export default function AdminSavingsPageView({
       </section>
 
       <Card className="overflow-hidden bg-white/[0.04]">
-        <CardHeader className="gap-4 border-b border-white/10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-2">
+        <CardHeader className="gap-3 border-b border-white/10 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-1.5">
               <Badge className="w-fit" variant="secondary">
                 Savings accounts ledger
               </Badge>
               <div>
-                <CardTitle className="font-['Outfit'] text-2xl">
+                <CardTitle className="font-['Outfit'] text-xl">
                   All member savings accounts
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs leading-5">
                   {table.getRowModel().rows.length} visible account
                   {table.getRowModel().rows.length === 1 ? "" : "s"} ·{" "}
                   {formatCompactNaira(
@@ -388,11 +392,11 @@ export default function AdminSavingsPageView({
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="relative min-w-[260px]">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative min-w-[220px]">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
-                  className="pl-11"
+                  className="h-9 pl-10 text-sm"
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search by member name or number"
                   value={searchQuery}
@@ -402,6 +406,7 @@ export default function AdminSavingsPageView({
               <Button
                 disabled={isExporting || table.getRowModel().rows.length === 0}
                 onClick={handleExport}
+                size="sm"
                 variant="secondary"
               >
                 <Download className="mr-2 h-4 w-4" />
@@ -410,7 +415,7 @@ export default function AdminSavingsPageView({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {(["all", "mandatory", "voluntary", "fixed_deposit"] as const).map(
               (value) => {
                 const isActive = accountFilter === value;
@@ -420,7 +425,7 @@ export default function AdminSavingsPageView({
                 return (
                   <button
                     key={value}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                       isActive
                         ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20"
                         : "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
@@ -442,7 +447,7 @@ export default function AdminSavingsPageView({
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent">
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead className="h-10 px-3" key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -460,7 +465,7 @@ export default function AdminSavingsPageView({
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell className="px-3 py-3 text-sm" key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
@@ -471,7 +476,10 @@ export default function AdminSavingsPageView({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell className="py-10 text-center text-slate-400" colSpan={6}>
+                  <TableCell
+                    className="py-8 text-center text-sm text-slate-400"
+                    colSpan={6}
+                  >
                     No savings accounts match the current filter yet.
                   </TableCell>
                 </TableRow>

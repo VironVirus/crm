@@ -42,10 +42,6 @@ const registrationShape = {
     }),
   address: z.string().trim().min(10, "Enter your address."),
   occupation: z.string().trim().min(2, "Enter your occupation."),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters long."),
-  confirmPassword: z.string().min(8, "Confirm your password."),
 };
 
 const nextOfKinShape = {
@@ -59,19 +55,6 @@ const nextOfKinShape = {
     .trim()
     .min(2, "Enter the relationship to your next of kin."),
 };
-
-function validatePasswordConfirmation(
-  value: Pick<MemberRegistrationValues, "password" | "confirmPassword">,
-  ctx: z.RefinementCtx,
-) {
-  if (value.password !== value.confirmPassword) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["confirmPassword"],
-      message: "Passwords do not match.",
-    });
-  }
-}
 
 function isFileLike(value: unknown): value is File {
   return typeof File !== "undefined" && value instanceof File;
@@ -128,9 +111,7 @@ function createOptionalFileSchema(fieldName: KycFieldName) {
   });
 }
 
-export const memberRegistrationSchema = z
-  .object(registrationShape)
-  .superRefine(validatePasswordConfirmation);
+export const memberRegistrationSchema = z.object(registrationShape);
 
 export const memberNextOfKinSchema = z.object(nextOfKinShape);
 

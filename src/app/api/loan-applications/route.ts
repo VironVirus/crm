@@ -10,6 +10,7 @@ import {
   type LoanInterestType,
   type LoanProductOption,
 } from "@/lib/loans";
+import { sendMemberEmail } from "@/lib/member-email";
 import { getMemberTier } from "@/lib/member-tier";
 import { sendMemberNotification } from "@/lib/notification-dispatch";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -41,6 +42,7 @@ type SavingsAccountRecord = {
 };
 
 type ProfileRecord = {
+  email: string;
   full_name: string;
   id: string;
   status: "active" | "inactive" | "suspended";
@@ -353,7 +355,11 @@ export async function POST(request: NextRequest) {
         )
         .eq("id", parsed.data.loanProductId)
         .maybeSingle(),
-      admin.from("profiles").select("id, full_name, status").eq("id", user.id).maybeSingle(),
+      admin
+        .from("profiles")
+        .select("id, email, full_name, status")
+        .eq("id", user.id)
+        .maybeSingle(),
     ]);
 
   if (memberError || !memberRecord) {
@@ -548,6 +554,22 @@ export async function POST(request: NextRequest) {
     principal: parsed.data.amountRequested,
     tenureMonths: parsed.data.tenureMonths,
   });
+  const loanRequestEmailWarning = await sendMemberEmail({
+    actionPath: "/portal/loans",
+    email: applicantProfileRecord.email,
+    fullName: applicantProfileRecord.full_name,
+    message: `Your ${selectedProduct.name} request for ${formatNaira(
+      parsed.data.amountRequested,
+    )} over ${parsed.data.tenureMonths} months has been submitted successfully. Estimated monthly repayment: ${formatNaira(
+      estimate.monthlyRepayment,
+    )}. We will update you again after the review stage.`,
+    subject: `Loan request received - ${selectedProduct.name}`,
+    title: "Loan request received",
+  });
+
+  if (loanRequestEmailWarning) {
+    guarantorWarnings.add(`Loan request receipt: ${loanRequestEmailWarning}`);
+  }
 
   revalidatePath("/portal");
   revalidatePath("/portal/loans");

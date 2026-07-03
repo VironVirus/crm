@@ -63,6 +63,13 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", {
   timeStyle: "short",
 });
 
+const meetingDateFormatter = new Intl.DateTimeFormat("en-NG", {
+  weekday: "short",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 export function formatMeetingDateTime(value: string | null | undefined) {
   if (!value) {
     return "Not set";
@@ -75,6 +82,67 @@ export function formatMeetingDateTime(value: string | null | undefined) {
   }
 
   return dateTimeFormatter.format(date);
+}
+
+export function getMeetingDateGroupKey(value: string | null | undefined) {
+  if (!value) {
+    return "unknown";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "unknown";
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function formatMeetingDateGroupLabel(value: string | null | undefined) {
+  if (!value) {
+    return "Unknown date";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
+  return meetingDateFormatter.format(date);
+}
+
+export function groupMeetingsByDate<T extends { startsAt: string }>(meetings: T[]) {
+  const groupedMeetings = new Map<
+    string,
+    {
+      dateKey: string;
+      label: string;
+      meetings: T[];
+    }
+  >();
+
+  meetings.forEach((meeting) => {
+    const dateKey = getMeetingDateGroupKey(meeting.startsAt);
+    const currentGroup = groupedMeetings.get(dateKey);
+
+    if (currentGroup) {
+      currentGroup.meetings.push(meeting);
+      return;
+    }
+
+    groupedMeetings.set(dateKey, {
+      dateKey,
+      label: formatMeetingDateGroupLabel(meeting.startsAt),
+      meetings: [meeting],
+    });
+  });
+
+  return Array.from(groupedMeetings.values());
 }
 
 export function getMeetingStatusLabel(value: MeetingStatus) {

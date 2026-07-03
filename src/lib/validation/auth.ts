@@ -10,9 +10,27 @@ export const internalRedirectPathSchema = z
     message: "Redirect path must stay within the app.",
   });
 
-export const loginFormSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
-  password: z.string().min(1, "Enter your password."),
+export const authEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email("Enter a valid email address.");
+
+export const emailOtpCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, "Enter the 6-digit code from your email.");
+
+export const loginOtpRequestSchema = z.object({
+  email: authEmailSchema,
 });
 
-export type LoginFormValues = z.infer<typeof loginFormSchema>;
+export const loginOtpVerificationSchema = z.object({
+  email: authEmailSchema,
+  token: emailOtpCodeSchema,
+});
+
+export type LoginOtpRequestValues = z.infer<typeof loginOtpRequestSchema>;
+export type LoginOtpVerificationValues = z.infer<
+  typeof loginOtpVerificationSchema
+>;
