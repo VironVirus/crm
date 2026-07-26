@@ -20,8 +20,9 @@ function jsonError(message: string, status: number) {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { meetingId: string } },
+  { params }: { params: Promise<{ meetingId: string }> },
 ) {
+  const { meetingId } = await params;
   let payload: unknown;
 
   try {
@@ -30,7 +31,7 @@ export async function PATCH(
     return jsonError("Unable to read the meeting update.", 400);
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -50,7 +51,7 @@ export async function PATCH(
     return jsonError("Only administrators can update meetings.", 403);
   }
 
-  const existingMeeting = await loadMeetingById(admin, params.meetingId);
+  const existingMeeting = await loadMeetingById(admin, meetingId);
 
   if (!existingMeeting) {
     return jsonError("The selected meeting could not be found.", 404);
@@ -80,7 +81,7 @@ export async function PATCH(
             status: "cancelled",
             updated_at: new Date().toISOString(),
           })
-          .eq("id", params.meetingId);
+          .eq("id", meetingId);
 
         if (error) {
           return jsonError(
@@ -101,7 +102,7 @@ export async function PATCH(
       await finalizeMeetingAttendance({
         admin,
         closedBy: user.id,
-        meetingId: params.meetingId,
+        meetingId,
       });
 
       revalidatePath("/admin/governance");
@@ -146,7 +147,7 @@ export async function PATCH(
         title: parsedMeeting.data.title,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.meetingId);
+      .eq("id", meetingId);
 
     if (error) {
       return jsonError(
@@ -157,7 +158,7 @@ export async function PATCH(
 
     await recalculateMeetingAttendanceStatuses({
       admin,
-      meetingId: params.meetingId,
+      meetingId,
     });
   } catch (error) {
     return jsonError(

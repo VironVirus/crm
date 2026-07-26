@@ -101,7 +101,7 @@ function getLoanProductRelation(
 }
 
 export default async function PortalLoansPage() {
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const {
     data: { user },
   } = await sessionClient.auth.getUser();

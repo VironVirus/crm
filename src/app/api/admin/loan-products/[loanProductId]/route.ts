@@ -12,8 +12,9 @@ function jsonError(message: string, status: number) {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { loanProductId: string } },
+  { params }: { params: Promise<{ loanProductId: string }> },
 ) {
+  const { loanProductId } = await params;
   let payload: unknown;
 
   try {
@@ -32,7 +33,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -70,7 +71,7 @@ export async function PATCH(
       processing_fee_rate: parsed.data.processingFeeRate,
       terms_summary: parsed.data.termsSummary || null,
     })
-    .eq("id", params.loanProductId);
+    .eq("id", loanProductId);
 
   if (error) {
     return jsonError(error.message ?? "Unable to update the loan product.", 500);

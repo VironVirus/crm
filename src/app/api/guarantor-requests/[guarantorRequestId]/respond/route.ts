@@ -54,9 +54,11 @@ function jsonError(message: string, status: number) {
 
 export async function POST(
   request: NextRequest,
-  context: { params: { guarantorRequestId: string } },
+  context: { params: Promise<{ guarantorRequestId: string }> },
 ) {
-  const parsedParams = guarantorRequestIdParamsSchema.safeParse(context.params);
+  const parsedParams = guarantorRequestIdParamsSchema.safeParse(
+    await context.params,
+  );
 
   if (!parsedParams.success) {
     return jsonError("Invalid guarantor request reference.", 400);
@@ -80,7 +82,7 @@ export async function POST(
     );
   }
 
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const {
     data: { user },
   } = await sessionClient.auth.getUser();

@@ -32,11 +32,12 @@ function mapNotificationRecord(record: NotificationRecord): MemberNotification {
 export default async function PortalNotificationsPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     type?: string;
-  };
+  }>;
 }) {
-  const supabase = createServerSupabaseClient();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -46,8 +47,9 @@ export default async function PortalNotificationsPage({
   }
 
   const selectedType =
-    typeof searchParams?.type === "string" && isNotificationType(searchParams.type)
-      ? searchParams.type
+    typeof resolvedSearchParams?.type === "string" &&
+    isNotificationType(resolvedSearchParams.type)
+      ? resolvedSearchParams.type
       : null;
 
   let notificationsQuery = supabase

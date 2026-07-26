@@ -11,7 +11,7 @@ function jsonError(message: string, status: number) {
 }
 
 export async function POST() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

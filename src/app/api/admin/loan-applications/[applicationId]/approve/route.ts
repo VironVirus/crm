@@ -44,15 +44,15 @@ function jsonError(message: string, status: number) {
 
 export async function POST(
   _request: Request,
-  context: { params: { applicationId: string } },
+  context: { params: Promise<{ applicationId: string }> },
 ) {
-  const parsedParams = applicationIdParamsSchema.safeParse(context.params);
+  const parsedParams = applicationIdParamsSchema.safeParse(await context.params);
 
   if (!parsedParams.success) {
     return jsonError("Invalid loan application reference.", 400);
   }
 
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const {
     data: { user },
   } = await sessionClient.auth.getUser();

@@ -28,7 +28,7 @@ function sanitizeFilenamePart(value: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const {
     data: { user },
   } = await sessionClient.auth.getUser();

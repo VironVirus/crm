@@ -175,7 +175,7 @@ function getLoanProductName({
 }
 
 export default async function MemberDashboardPage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const admin = createSupabaseAdminClient();
   const {
     data: { user },

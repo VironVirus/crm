@@ -17,7 +17,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function PortalFinancialsPage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const admin = createSupabaseAdminClient();
   const {
     data: { user },

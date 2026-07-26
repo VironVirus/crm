@@ -7,7 +7,7 @@ webhook, and server-side Supabase access require a running Node.js process.
 ## Hosting requirements
 
 - Hostinger Business Web Hosting, a supported Cloud plan, or a VPS
-- Node.js 20.x
+- Node.js 22.x
 - pnpm
 - A Supabase project
 - A public HTTPS domain
@@ -56,7 +56,7 @@ In hPanel:
    | Setting | Value |
    | --- | --- |
    | Framework | Next.js |
-   | Node.js version | 20.x |
+   | Node.js version | 22.x |
    | Package manager | pnpm |
    | Install command | `pnpm install --frozen-lockfile` |
    | Build command | `pnpm build` |
@@ -65,9 +65,8 @@ In hPanel:
 
 Do not set a custom entry file when the **Next.js** framework preset is active.
 The `start` script reads Hostinger's assigned `PORT` automatically.
-The repository pins pnpm 10 in `package.json`; do not override it with pnpm 11
-in hPanel because Hostinger's Node 20 Corepack launcher cannot execute pnpm 11's
-ES module shim.
+The repository pins pnpm 10 in `package.json`; keep that version in hPanel so
+local installs and Hostinger deployments use the same lockfile format.
 
 ## 3. Add environment variables
 
@@ -144,7 +143,7 @@ app, so back up the Supabase database before applying production schema changes.
 
 ## VPS alternative
 
-On a Hostinger VPS, clone the repository, install Node.js 20 and pnpm, add the
+On a Hostinger VPS, clone the repository, install Node.js 22 and pnpm, add the
 environment variables through a protected service configuration, then run:
 
 ```bash

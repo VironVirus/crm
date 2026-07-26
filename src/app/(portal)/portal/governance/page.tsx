@@ -49,7 +49,7 @@ type ChargeRecord = {
 };
 
 export default async function PortalGovernancePage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const admin = createSupabaseAdminClient();
   const {
     data: { user },

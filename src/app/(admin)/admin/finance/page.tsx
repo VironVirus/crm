@@ -32,7 +32,7 @@ type SavingsAccountRecord = {
 };
 
 export default async function AdminFinancePage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   const [membersResult, profilesResult, accountsResult] = await Promise.all([
     supabase.from("members").select("id"),

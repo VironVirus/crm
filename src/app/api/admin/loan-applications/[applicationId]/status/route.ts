@@ -18,9 +18,9 @@ function jsonError(message: string, status: number) {
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { applicationId: string } },
+  context: { params: Promise<{ applicationId: string }> },
 ) {
-  const parsedParams = applicationIdParamsSchema.safeParse(context.params);
+  const parsedParams = applicationIdParamsSchema.safeParse(await context.params);
 
   if (!parsedParams.success) {
     return jsonError("Invalid loan application reference.", 400);
@@ -44,7 +44,7 @@ export async function PATCH(
     );
   }
 
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const {
     data: { user },
   } = await sessionClient.auth.getUser();

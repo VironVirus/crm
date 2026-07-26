@@ -4,23 +4,27 @@ import { isFlutterwaveMockModeEnabled } from "@/lib/env/server";
 import { readMockFlutterwaveSessionToken } from "@/lib/flutterwave/mock";
 import { formatPaymentAmount, formatPaymentTypeLabel } from "@/lib/payments";
 
-export default function MockPaymentPage({
+export default async function MockPaymentPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     session?: string;
-  };
+  }>;
 }) {
+  const resolvedSearchParams = await searchParams;
+
   if (!isFlutterwaveMockModeEnabled()) {
     redirect("/portal/actions");
   }
 
-  if (!searchParams?.session) {
+  if (!resolvedSearchParams?.session) {
     redirect("/portal/actions");
   }
 
   try {
-    const session = readMockFlutterwaveSessionToken(searchParams.session);
+    const session = readMockFlutterwaveSessionToken(
+      resolvedSearchParams.session,
+    );
 
     return (
       <MockPaymentPageView
@@ -29,7 +33,7 @@ export default function MockPaymentPage({
         memberName={session.memberName}
         memberNumber={session.memberNumber}
         paymentTypeLabel={formatPaymentTypeLabel(session.paymentType)}
-        sessionToken={searchParams.session}
+        sessionToken={resolvedSearchParams.session}
       />
     );
   } catch {

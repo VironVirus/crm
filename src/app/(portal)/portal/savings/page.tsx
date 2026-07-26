@@ -37,7 +37,7 @@ type SavingsTransactionRecord = {
 };
 
 export default async function PortalSavingsPage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

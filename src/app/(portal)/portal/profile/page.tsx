@@ -33,7 +33,7 @@ type MemberRecord = {
 };
 
 export default async function PortalProfilePage() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const admin = createSupabaseAdminClient();
   const {
     data: { user },

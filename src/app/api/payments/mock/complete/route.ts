@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     return jsonError("A mock payment session token is required.", 400);
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

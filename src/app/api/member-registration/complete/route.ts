@@ -74,7 +74,7 @@ async function assignMemberNumber(memberId: string) {
 }
 
 async function resolveAuthenticatedUser(request: NextRequest) {
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const cookieUserResult = await sessionClient.auth.getUser();
 
   if (cookieUserResult.data.user) {

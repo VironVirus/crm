@@ -13,8 +13,9 @@ function jsonError(message: string, status: number) {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { memberId: string } },
+  { params }: { params: Promise<{ memberId: string }> },
 ) {
+  const { memberId } = await params;
   let payload: unknown;
 
   try {
@@ -33,7 +34,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -56,7 +57,7 @@ export async function PATCH(
   const { data: memberRecord, error: memberError } = await admin
     .from("members")
     .select("national_id_path, passport_photo_path, utility_bill_path")
-    .eq("id", params.memberId)
+    .eq("id", memberId)
     .maybeSingle();
 
   if (memberError || !memberRecord) {
@@ -87,7 +88,7 @@ export async function PATCH(
   const { data: updatedProfile, error: updateError } = await admin
     .from("profiles")
     .update(profileUpdate)
-    .eq("id", params.memberId)
+    .eq("id", memberId)
     .select("full_name, is_verified")
     .single();
 
@@ -104,7 +105,7 @@ export async function PATCH(
       contextLabel: "Member verification notice",
       emailSubject:
         "KYC verified - Ifemelunma Multi-Purpose Co-operative Society",
-      memberId: params.memberId,
+      memberId,
       message:
         "Your KYC documents have been reviewed and your member profile is now verified.",
       title: "Member profile verified",

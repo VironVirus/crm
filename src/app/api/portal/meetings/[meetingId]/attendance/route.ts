@@ -13,9 +13,10 @@ function jsonError(message: string, status: number) {
 
 export async function POST(
   _request: Request,
-  { params }: { params: { meetingId: string } },
+  { params }: { params: Promise<{ meetingId: string }> },
 ) {
-  const supabase = createServerSupabaseClient();
+  const { meetingId } = await params;
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -29,7 +30,7 @@ export async function POST(
   try {
     const status = await markMemberAttendance({
       admin,
-      meetingId: params.meetingId,
+      meetingId,
       memberId: user.id,
     });
 

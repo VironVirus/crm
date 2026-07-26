@@ -52,11 +52,12 @@ type ShareConfigRecord = {
 export default async function PortalActionsPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     payment?: string;
-  };
+  }>;
 }) {
-  const supabase = createServerSupabaseClient();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createServerSupabaseClient();
   const admin = createSupabaseAdminClient();
   const {
     data: { user },
@@ -154,7 +155,9 @@ export default async function PortalActionsPage({
       memberNumber={profile?.member_number ?? null}
       memberTier={getMemberTier(member)}
       paymentLoanOptions={paymentLoanOptions}
-      paymentStatus={searchParams?.payment === "success" ? "success" : null}
+      paymentStatus={
+        resolvedSearchParams?.payment === "success" ? "success" : null
+      }
       shareConfig={shareConfig}
     />
   );

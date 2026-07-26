@@ -16,12 +16,13 @@ export async function PATCH(
   {
     params,
   }: {
-    params: {
+    params: Promise<{
       attendanceId: string;
       meetingId: string;
-    };
+    }>;
   },
 ) {
+  const { attendanceId, meetingId } = await params;
   let payload: unknown;
 
   try {
@@ -40,7 +41,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -63,10 +64,10 @@ export async function PATCH(
   try {
     await setMeetingAttendanceApproval({
       admin,
-      attendanceId: params.attendanceId,
+      attendanceId,
       approvedBy: user.id,
       isApproved: parsed.data.isApproved,
-      meetingId: params.meetingId,
+      meetingId,
     });
   } catch (error) {
     return jsonError(

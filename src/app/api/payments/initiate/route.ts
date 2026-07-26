@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const sessionClient = createServerSupabaseClient();
+  const sessionClient = await createServerSupabaseClient();
   const {
     data: { user },
   } = await sessionClient.auth.getUser();
