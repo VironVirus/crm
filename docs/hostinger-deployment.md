@@ -65,6 +65,9 @@ In hPanel:
 
 Do not set a custom entry file when the **Next.js** framework preset is active.
 The `start` script reads Hostinger's assigned `PORT` automatically.
+The repository pins pnpm 10 in `package.json`; do not override it with pnpm 11
+in hPanel because Hostinger's Node 20 Corepack launcher cannot execute pnpm 11's
+ES module shim.
 
 ## 3. Add environment variables
 
