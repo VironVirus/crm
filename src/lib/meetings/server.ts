@@ -12,6 +12,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 type AdminClient = ReturnType<typeof createSupabaseAdminClient>;
 
 type MeetingRecord = {
+  absence_fee: number | string | null;
   agenda: string | null;
   attendance_closes_at: string;
   created_by: string;
@@ -19,6 +20,7 @@ type MeetingRecord = {
   final_reminder_sent_at: string | null;
   id: string;
   lateness_starts_at: string;
+  late_fee: number | string | null;
   location: string | null;
   reminder_message: string | null;
   starts_at: string;
@@ -43,17 +45,22 @@ type AttendanceRecord = {
   status: MeetingAttendanceStatus;
 };
 
-function buildChargeCopy(status: MeetingAttendanceStatus) {
+function parseFee(value: number | string | null, fallback: number) {
+  const parsed = typeof value === "number" ? value : Number.parseFloat(value ?? "");
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function buildChargeCopy(meeting: MeetingRecord, status: MeetingAttendanceStatus) {
   return status === "late"
     ? {
-        amount: MEETING_LATE_FEE,
+        amount: parseFee(meeting.late_fee, MEETING_LATE_FEE),
         description:
           "Meeting attendance was marked after the lateness cutoff time.",
         sourceType: "meeting_late" as const,
         title: "Late meeting attendance charge",
       }
     : {
-        amount: MEETING_ABSENT_FEE,
+        amount: parseFee(meeting.absence_fee, MEETING_ABSENT_FEE),
         description: "Meeting attendance was not marked before the close time.",
         sourceType: "meeting_absence" as const,
         title: "Missed meeting charge",
@@ -84,13 +91,14 @@ async function syncMemberChargeForAttendance({
     return 0;
   }
 
-  const chargeCopy = buildChargeCopy(status);
+  const chargeCopy = buildChargeCopy(meeting, status);
   const oppositeSourceType =
     chargeCopy.sourceType === "meeting_late" ? "meeting_absence" : "meeting_late";
 
   await admin.from("member_charges").upsert(
     {
       amount: chargeCopy.amount,
+      charge_category: "meeting_penalty",
       created_by: triggeredBy,
       description: `${chargeCopy.description} Meeting: ${meeting.title}.`,
       due_at: meeting.attendance_closes_at,
@@ -119,7 +127,7 @@ export async function loadMeetingById(admin: AdminClient, meetingId: string) {
   const result = await admin
     .from("meetings")
     .select(
-      "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, status, created_by, daily_reminder_sent_at, final_reminder_sent_at",
+      "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, late_fee, absence_fee, status, created_by, daily_reminder_sent_at, final_reminder_sent_at",
     )
     .eq("id", meetingId)
     .maybeSingle();

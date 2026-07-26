@@ -1,18 +1,43 @@
 # Ifemelunma Cooperative Society
 
-Next.js 14, Supabase, Tailwind CSS, and shadcn/ui cooperative society management system.
+A full-stack cooperative society management system built with Next.js 14,
+Supabase, Tailwind CSS, and shadcn/ui.
+
+## What the app does
+
+The application has two authenticated workspaces:
+
+- **Member portal:** onboarding and KYC, automated monthly dues, investment
+  positions, occasion levies and attendance penalties, savings, share
+  purchases, loan applications and guarantor responses, repayments, meetings
+  and attendance, notifications, financial records, and PDF statements.
+- **Administration:** member verification and roles, savings transactions,
+  monthly dues, investment plans and member investments, occasion levies,
+  configurable attendance penalties, loan products and approval/disbursement
+  workflows, share transfers and dividends, meeting/attendance management,
+  dashboards, accounting reports, and environment readiness checks.
+
+Supabase provides email OTP authentication, Postgres data storage, private KYC
+file storage, Row Level Security, database functions/triggers, and Edge
+Functions. Flutterwave handles hosted payments and verified webhooks. Africa's
+Talking and Resend provide optional SMS and email delivery.
 
 ## Development
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
 Open `http://localhost:3000`.
 
+Copy `.env.example` to `.env.local` and replace the example values before using
+authenticated features locally.
+
 ## Production Environment
 
-`next start` validates the required production environment variables before the app starts. Keep `.env.example` in sync with deployment secrets.
+`next build` and `next start` validate the required production environment
+variables. Keep `.env.example` in sync with deployment secrets.
 
 Required Next.js app variables:
 
@@ -23,6 +48,7 @@ Required Next.js app variables:
 Recommended feature variables:
 
 - `APP_URL`
+- `FLUTTERWAVE_MOCK_MODE`
 - `FLUTTERWAVE_PUBLIC_KEY`
 - `FLUTTERWAVE_SECRET_KEY`
 - `FLUTTERWAVE_SECRET_HASH`
@@ -44,6 +70,16 @@ Netlify notes:
 - If `APP_URL` is not set, the app falls back to Netlify-provided `URL` or `DEPLOY_PRIME_URL`.
 - Payments, SMS, and email features remain runtime-dependent on their provider secrets. The base app can still build without them.
 
+Hostinger notes:
+
+- Deploy this as a **Node.js Web App** using the Next.js preset, Node 20, pnpm,
+  `pnpm build`, and `pnpm start`.
+- Add the required environment variables before the first build.
+- See [`docs/hostinger-deployment.md`](docs/hostinger-deployment.md) for the
+  complete database, hPanel, provider callback, verification, and rollback
+  checklist.
+- The liveness endpoint is available at `/api/health`.
+
 Required Supabase Edge Function secrets:
 
 - `SUPABASE_URL`
@@ -59,7 +95,15 @@ Required Supabase Edge Function secrets:
 
 For a fresh database, run `supabase/sql/full_schema_setup.sql`.
 
-For an existing database that already ran the full schema, run `supabase/sql/production_hardening_post_schema_patch.sql` to add production RLS hardening, audit logs, journal delete protection, and payment initiation rate limiting.
+For an existing database that already ran the full schema, run these patches in
+the Supabase SQL Editor:
+
+1. `supabase/sql/production_hardening_post_schema_patch.sql` for production RLS
+   hardening, audit logs, journal delete protection, and payment initiation rate
+   limiting.
+2. `supabase/sql/cooperative_financial_features_patch.sql` for automated
+   monthly dues, investments, occasion levies, and configurable attendance
+   penalties.
 
 ## Netlify Deployment Checklist
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COOPERATIVE_ROLES } from "@/lib/auth/roles";
+import { CHARGE_STATUSES } from "@/lib/cooperative-finance";
 import { LOAN_INTEREST_TYPES } from "@/lib/loans";
 
 export const cooperativeMemberStatusSchema = z.enum([
@@ -99,6 +100,11 @@ export const adminMeetingSchema = z
       .string()
       .datetime("Choose a valid attendance close time."),
     reminderMessage: z.string().trim().max(500).optional().nullable(),
+    lateFee: z.coerce.number().finite().min(0, "Late fee cannot be negative."),
+    absenceFee: z.coerce
+      .number()
+      .finite()
+      .min(0, "Absence fee cannot be negative."),
   })
   .superRefine((value, context) => {
     const startsAt = new Date(value.startsAt);
@@ -150,3 +156,96 @@ export const shareConfigUpdateSchema = z.object({
     .int("Minimum shares must be a whole number.")
     .positive("Minimum shares must be at least 1."),
 });
+
+const optionalDate = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value.length === 0 || /^\d{4}-\d{2}-\d{2}$/.test(value),
+    "Choose a valid date.",
+  )
+  .optional()
+  .nullable();
+
+export const adminInvestmentPlanSchema = z
+  .object({
+    name: z.string().trim().min(3, "Enter the investment plan name.").max(160),
+    description: z.string().trim().max(1000).optional().nullable(),
+    projectedReturnRate: z.coerce
+      .number()
+      .finite()
+      .min(0, "Projected return cannot be negative.")
+      .optional()
+      .nullable(),
+    startsOn: optionalDate,
+    endsOn: optionalDate,
+  })
+  .superRefine((value, context) => {
+    if (value.startsOn && value.endsOn && value.endsOn < value.startsOn) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The end date cannot be before the start date.",
+        path: ["endsOn"],
+      });
+    }
+  });
+
+export const adminMemberInvestmentSchema = z.object({
+  memberId: z.string().uuid("Choose a valid member."),
+  planId: z.string().uuid("Choose a valid investment plan."),
+  amount: z.coerce.number().finite().positive("Enter a valid invested amount."),
+  investedAt: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a valid investment date."),
+  notes: z.string().trim().max(500).optional().nullable(),
+});
+
+export const adminOccasionLevySchema = z
+  .object({
+    title: z.string().trim().min(3, "Enter the occasion title.").max(160),
+    description: z.string().trim().max(1000).optional().nullable(),
+    amount: z.coerce.number().finite().positive("Enter a valid levy amount."),
+    dueAt: z.string().datetime("Choose a valid due date and time.").optional().nullable(),
+    targetScope: z.enum(["all_members", "single_member"]),
+    targetMemberId: z.string().uuid("Choose a valid member.").optional().nullable(),
+  })
+  .superRefine((value, context) => {
+    if (value.targetScope === "single_member" && !value.targetMemberId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Choose the member receiving this levy.",
+        path: ["targetMemberId"],
+      });
+    }
+  });
+
+export const adminChargeStatusSchema = z.object({
+  chargeId: z.string().uuid("Choose a valid charge."),
+  status: z.enum(CHARGE_STATUSES),
+});
+
+export const adminCooperativeFinanceActionSchema = z.discriminatedUnion(
+  "action",
+  [
+    z.object({
+      action: z.literal("create_investment_plan"),
+      data: adminInvestmentPlanSchema,
+    }),
+    z.object({
+      action: z.literal("record_member_investment"),
+      data: adminMemberInvestmentSchema,
+    }),
+    z.object({
+      action: z.literal("create_occasion_levy"),
+      data: adminOccasionLevySchema,
+    }),
+    z.object({
+      action: z.literal("update_charge_status"),
+      data: adminChargeStatusSchema,
+    }),
+    z.object({
+      action: z.literal("generate_monthly_dues"),
+    }),
+  ],
+);

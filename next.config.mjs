@@ -1,5 +1,6 @@
 import {
   PHASE_DEVELOPMENT_SERVER,
+  PHASE_PRODUCTION_BUILD,
   PHASE_PRODUCTION_SERVER,
 } from "next/constants.js";
 
@@ -10,7 +11,10 @@ const REQUIRED_PRODUCTION_ENVIRONMENT_VARIABLES = [
 ];
 
 function validateProductionEnvironment(phase) {
-  if (phase !== PHASE_PRODUCTION_SERVER) {
+  if (
+    phase !== PHASE_PRODUCTION_BUILD &&
+    phase !== PHASE_PRODUCTION_SERVER
+  ) {
     return;
   }
 

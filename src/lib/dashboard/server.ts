@@ -1,5 +1,6 @@
 import "server-only";
 
+import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
 import { type LoanStatus } from "@/lib/loans";
 import {
   type DashboardKpiSnapshot,
@@ -66,6 +67,19 @@ type ShareHoldingRecord = {
 type SharePurchaseRecord = {
   amount: number | string | null;
   transaction_date: string;
+};
+
+type MemberInvestmentRecord = {
+  amount: number | string | null;
+};
+
+type PendingChargeRecord = {
+  amount: number | string | null;
+  charge_category:
+    | "manual"
+    | "meeting_penalty"
+    | "monthly_due"
+    | "occasion_levy";
 };
 
 function toMonthKey(value: string) {
@@ -227,6 +241,7 @@ function buildMemberGrowthSeries({
 
 export async function getAdminDashboardData() {
   const admin = createSupabaseAdminClient();
+  const duesGenerationError = await ensureCurrentMonthlyDues(admin);
   const {
     currentMonthKey,
     currentMonthStartTimestamp,
@@ -246,6 +261,8 @@ export async function getAdminDashboardData() {
     memberSharesResult,
     sharePurchasesResult,
     pendingLoanReviewCountResult,
+    memberInvestmentsResult,
+    pendingChargesResult,
     recentActivityResult,
   ] = await Promise.all([
     admin
@@ -286,6 +303,11 @@ export async function getAdminDashboardData() {
       .from("loan_applications")
       .select("id", { count: "exact", head: true })
       .in("status", ["submitted", "under_review"]),
+    admin.from("member_investments").select("amount"),
+    admin
+      .from("member_charges")
+      .select("amount, charge_category")
+      .eq("status", "pending"),
     loadRecentDashboardActivity(admin),
   ]);
 
@@ -300,6 +322,9 @@ export async function getAdminDashboardData() {
     memberSharesResult.error?.message,
     sharePurchasesResult.error?.message,
     pendingLoanReviewCountResult.error?.message,
+    memberInvestmentsResult.error?.message,
+    pendingChargesResult.error?.message,
+    duesGenerationError,
     recentActivityResult.error,
   ].filter(Boolean);
 
@@ -319,6 +344,10 @@ export async function getAdminDashboardData() {
     (memberSharesResult.data as ShareHoldingRecord[] | null) ?? [];
   const sharePurchases =
     (sharePurchasesResult.data as SharePurchaseRecord[] | null) ?? [];
+  const memberInvestments =
+    (memberInvestmentsResult.data as MemberInvestmentRecord[] | null) ?? [];
+  const pendingCharges =
+    (pendingChargesResult.data as PendingChargeRecord[] | null) ?? [];
 
   const profileMap = new Map(
     profiles.map((profile) => [profile.id, profile] as const),
@@ -351,6 +380,26 @@ export async function getAdminDashboardData() {
     ),
   );
 
+  const totalMemberInvestments = roundDashboardCurrency(
+    memberInvestments.reduce(
+      (total, investment) => total + parseDashboardNumeric(investment.amount),
+      0,
+    ),
+  );
+
+  function totalPendingChargesByCategory(
+    category: PendingChargeRecord["charge_category"],
+  ) {
+    return roundDashboardCurrency(
+      pendingCharges
+        .filter((charge) => charge.charge_category === category)
+        .reduce(
+          (total, charge) => total + parseDashboardNumeric(charge.amount),
+          0,
+        ),
+    );
+  }
+
   const collectionsThisMonth = roundDashboardCurrency(
     savingsDeposits
       .filter(
@@ -381,10 +430,15 @@ export async function getAdminDashboardData() {
 
   const kpis: DashboardKpiSnapshot = {
     collectionsThisMonth,
+    outstandingMonthlyDues: totalPendingChargesByCategory("monthly_due"),
+    outstandingOccasionLevies:
+      totalPendingChargesByCategory("occasion_levy"),
+    outstandingPenalties: totalPendingChargesByCategory("meeting_penalty"),
     overdueLoansCount: overdueLoanIds.size,
     pendingLoanReviewCount: pendingLoanReviewCountResult.count ?? 0,
     totalActiveMembers,
     totalLoansOutstanding,
+    totalMemberInvestments,
     totalSavingsBalance,
     totalSharesCapital,
   };

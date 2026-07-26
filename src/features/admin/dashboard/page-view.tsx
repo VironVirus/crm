@@ -16,6 +16,7 @@ import {
   Coins,
   CreditCard,
   FileText,
+  HandCoins,
   Landmark,
   Loader2,
   PiggyBank,
@@ -330,6 +331,33 @@ export default function AdminDashboardPageView({
           icon={Coins}
           label="Total share capital"
           value={formatDashboardNaira(kpis.totalSharesCapital)}
+        />
+        <DashboardKpiCard
+          description="Across all active investment plans"
+          icon={HandCoins}
+          label="Member investments"
+          value={formatDashboardNaira(kpis.totalMemberInvestments)}
+        />
+        <DashboardKpiCard
+          accent={kpis.outstandingMonthlyDues > 0 ? "danger" : "default"}
+          description="Automated ₦10,000 monthly obligations"
+          icon={CalendarClock}
+          label="Monthly dues outstanding"
+          value={formatDashboardNaira(kpis.outstandingMonthlyDues)}
+        />
+        <DashboardKpiCard
+          accent={kpis.outstandingOccasionLevies > 0 ? "danger" : "default"}
+          description="Member occasion levies awaiting settlement"
+          icon={FileText}
+          label="Occasion levies outstanding"
+          value={formatDashboardNaira(kpis.outstandingOccasionLevies)}
+        />
+        <DashboardKpiCard
+          accent={kpis.outstandingPenalties > 0 ? "danger" : "default"}
+          description="Late and absent meeting or event charges"
+          icon={AlertTriangle}
+          label="Attendance penalties"
+          value={formatDashboardNaira(kpis.outstandingPenalties)}
         />
         <DashboardKpiCard
           description="Monthly collections"

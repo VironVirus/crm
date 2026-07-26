@@ -134,10 +134,12 @@ export async function PATCH(
       .from("meetings")
       .update({
         agenda: parsedMeeting.data.agenda || null,
+        absence_fee: parsedMeeting.data.absenceFee,
         attendance_closes_at: parsedMeeting.data.attendanceClosesAt,
         daily_reminder_sent_at: null,
         final_reminder_sent_at: null,
         lateness_starts_at: parsedMeeting.data.latenessStartsAt,
+        late_fee: parsedMeeting.data.lateFee,
         location: parsedMeeting.data.location || null,
         reminder_message: parsedMeeting.data.reminderMessage || null,
         starts_at: parsedMeeting.data.startsAt,

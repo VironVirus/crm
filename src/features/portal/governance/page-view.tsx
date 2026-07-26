@@ -30,6 +30,7 @@ import { getMemberTierMeta, type MemberTier } from "@/lib/member-tier";
 
 type GovernanceMeetingRow = {
   agenda: string | null;
+  absenceFee: number;
   attendanceApproved: boolean | null;
   attendanceClosesAt: string;
   attendanceMarkedAt: string | null;
@@ -38,6 +39,7 @@ type GovernanceMeetingRow = {
   chargeStatus: MemberChargeStatus | null;
   id: string;
   latenessStartsAt: string;
+  lateFee: number;
   location: string | null;
   reminderMessage: string | null;
   startsAt: string;
@@ -292,13 +294,21 @@ export default function PortalGovernancePageView({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
-                  <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-5">
                     <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
                       <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                         Starts
                       </p>
                       <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
                         {formatMeetingDateTime(meeting.startsAt)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border bg-secondary px-3 py-3">
+                      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                        Penalties
+                      </p>
+                      <p className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
+                        Late {formatNaira(meeting.lateFee)} · Absent {formatNaira(meeting.absenceFee)}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-border bg-secondary px-3 py-3">

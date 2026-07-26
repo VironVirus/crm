@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import {
   BarChart3,
   Coins,
+  HandCoins,
   Landmark,
   LayoutDashboard,
   Menu,
@@ -37,6 +38,7 @@ const adminItems: NavigationItem[] = [
   { href: "/admin/finance", icon: Wallet, label: "Savings" },
   { href: "/admin/loans", icon: Landmark, label: "Loans" },
   { href: "/admin/reports", icon: BarChart3, label: "Reports" },
+  { href: "/admin/operations", icon: HandCoins, label: "Operations" },
   { href: "/admin/governance", icon: Vote, label: "Meetings" },
   { href: "/admin/shares", icon: Coins, label: "Shares" },
   { href: "/admin/settings", icon: Settings2, label: "Settings" },
@@ -121,7 +123,7 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
 
           <button
             className={`flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-medium transition ${
-              pathname.startsWith("/admin/shares")
+                moreItems.some((item) => isActivePath(pathname, item.href))
                 ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-100"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}

@@ -2,10 +2,14 @@ import { type LoanStatus } from "@/lib/loans";
 
 export type DashboardKpiSnapshot = {
   collectionsThisMonth: number;
+  outstandingMonthlyDues: number;
+  outstandingOccasionLevies: number;
+  outstandingPenalties: number;
   overdueLoansCount: number;
   pendingLoanReviewCount: number;
   totalActiveMembers: number;
   totalLoansOutstanding: number;
+  totalMemberInvestments: number;
   totalSavingsBalance: number;
   totalSharesCapital: number;
 };

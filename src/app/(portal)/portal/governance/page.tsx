@@ -21,10 +21,12 @@ type ProfileRecord = {
 };
 
 type MeetingRecord = {
+  absence_fee: number | string | null;
   agenda: string | null;
   attendance_closes_at: string;
   id: string;
   lateness_starts_at: string;
+  late_fee: number | string | null;
   location: string | null;
   reminder_message: string | null;
   starts_at: string;
@@ -78,7 +80,7 @@ export default async function PortalGovernancePage() {
     admin
       .from("meetings")
       .select(
-        "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, status",
+        "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, late_fee, absence_fee, status",
       )
       .order("starts_at", { ascending: false }),
     supabase
@@ -112,6 +114,7 @@ export default async function PortalGovernancePage() {
 
       return {
         agenda: meeting.agenda,
+        absenceFee: parseMoney(meeting.absence_fee),
         attendanceApproved: attendance?.is_approved ?? null,
         attendanceClosesAt: meeting.attendance_closes_at,
         attendanceMarkedAt: attendance?.marked_at ?? null,
@@ -120,6 +123,7 @@ export default async function PortalGovernancePage() {
         chargeStatus: charge?.status ?? null,
         id: meeting.id,
         latenessStartsAt: meeting.lateness_starts_at,
+        lateFee: parseMoney(meeting.late_fee),
         location: meeting.location,
         reminderMessage: meeting.reminder_message,
         startsAt: meeting.starts_at,

@@ -21,12 +21,14 @@ export type MemberChargeStatus = (typeof MEMBER_CHARGE_STATUSES)[number];
 export type MemberChargeSourceType = (typeof MEMBER_CHARGE_SOURCE_TYPES)[number];
 
 export type MeetingRow = {
+  absenceFee: number;
   id: string;
   title: string;
   agenda: string | null;
   location: string | null;
   startsAt: string;
   latenessStartsAt: string;
+  lateFee: number;
   attendanceClosesAt: string;
   reminderMessage: string | null;
   status: MeetingStatus;

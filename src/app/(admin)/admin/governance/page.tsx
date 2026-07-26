@@ -4,11 +4,13 @@ import { syncMeetingState } from "@/lib/meetings/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type MeetingRecord = {
+  absence_fee: number | string | null;
   agenda: string | null;
   attendance_closes_at: string;
   created_at: string;
   id: string;
   lateness_starts_at: string;
+  late_fee: number | string | null;
   location: string | null;
   reminder_message: string | null;
   starts_at: string;
@@ -49,7 +51,7 @@ export default async function AdminGovernancePage() {
       admin
         .from("meetings")
         .select(
-          "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, status, created_at",
+          "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, late_fee, absence_fee, status, created_at",
         )
         .order("starts_at", { ascending: false }),
       admin
@@ -173,6 +175,7 @@ export default async function AdminGovernancePage() {
 
     return {
       absentCount: attendance.absentCount,
+      absenceFee: parseMoney(meeting.absence_fee),
       agenda: meeting.agenda,
       attendanceClosesAt: meeting.attendance_closes_at,
       attendees: attendance.rows.sort((left, right) => {
@@ -199,6 +202,7 @@ export default async function AdminGovernancePage() {
       id: meeting.id,
       lateCount: attendance.lateCount,
       latenessStartsAt: meeting.lateness_starts_at,
+      lateFee: parseMoney(meeting.late_fee),
       location: meeting.location,
       pendingApprovalCount: attendance.pendingApprovalCount,
       pendingChargesAmount: charges.pendingChargesAmount,

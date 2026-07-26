@@ -51,10 +51,12 @@ import { formatNaira } from "@/lib/loans";
 
 const meetingFormSchema = z
   .object({
+    absenceFee: z.coerce.number().finite().min(0, "Enter a valid absence fee."),
     agenda: z.string().trim().max(2000).optional(),
     attendanceClosesAt: z.string().min(1, "Choose when attendance should close."),
     latenessStartsAt: z.string().min(1, "Choose when lateness should begin."),
     location: z.string().trim().max(160).optional(),
+    lateFee: z.coerce.number().finite().min(0, "Enter a valid late fee."),
     reminderMessage: z.string().trim().max(500).optional(),
     startsAt: z.string().min(1, "Choose when the meeting starts."),
     title: z.string().trim().min(3, "Enter the meeting title.").max(160),
@@ -128,6 +130,7 @@ type GovernanceAttendanceRow = {
 
 type GovernanceMeetingRow = {
   absentCount: number;
+  absenceFee: number;
   agenda: string | null;
   attendanceClosesAt: string;
   attendees: GovernanceAttendanceRow[];
@@ -136,6 +139,7 @@ type GovernanceMeetingRow = {
   id: string;
   lateCount: number;
   latenessStartsAt: string;
+  lateFee: number;
   location: string | null;
   pendingApprovalCount: number;
   pendingChargesAmount: number;
@@ -206,10 +210,12 @@ function MeetingFormDialog({
   const [serverError, setServerError] = useState<string | null>(null);
   const defaultValues = useMemo<MeetingFormValues>(
     () => ({
+      absenceFee: meeting?.absenceFee ?? MEETING_ABSENT_FEE,
       agenda: meeting?.agenda ?? "",
       attendanceClosesAt: formatDateTimeLocalValue(meeting?.attendanceClosesAt),
       latenessStartsAt: formatDateTimeLocalValue(meeting?.latenessStartsAt),
       location: meeting?.location ?? "",
+      lateFee: meeting?.lateFee ?? MEETING_LATE_FEE,
       reminderMessage: meeting?.reminderMessage ?? "",
       startsAt: formatDateTimeLocalValue(meeting?.startsAt),
       title: meeting?.title ?? "",
@@ -238,9 +244,11 @@ function MeetingFormDialog({
       {
         body: JSON.stringify({
           agenda: values.agenda || null,
+          absenceFee: values.absenceFee,
           attendanceClosesAt: new Date(values.attendanceClosesAt).toISOString(),
           latenessStartsAt: new Date(values.latenessStartsAt).toISOString(),
           location: values.location || null,
+          lateFee: values.lateFee,
           reminderMessage: values.reminderMessage || null,
           startsAt: new Date(values.startsAt).toISOString(),
           title: values.title,
@@ -365,7 +373,7 @@ function MeetingFormDialog({
               type="datetime-local"
               {...register("latenessStartsAt")}
             />
-            <FieldHint>Attendance marked after this time becomes late and attracts the ₦1,000 late charge.</FieldHint>
+            <FieldHint>Attendance marked after this time becomes late and attracts the configured late penalty.</FieldHint>
             <FieldMessage message={errors.latenessStartsAt?.message} />
           </div>
 
@@ -376,7 +384,7 @@ function MeetingFormDialog({
               type="datetime-local"
               {...register("attendanceClosesAt")}
             />
-            <FieldHint>When you end the meeting or this time passes, anyone not marked becomes absent and attracts the ₦2,000 absence charge.</FieldHint>
+            <FieldHint>When you end the meeting or this time passes, anyone not marked becomes absent and attracts the configured absence penalty.</FieldHint>
             <FieldMessage message={errors.attendanceClosesAt?.message} />
           </div>
 
@@ -389,6 +397,32 @@ function MeetingFormDialog({
             />
             <FieldHint>Add the physical venue or meeting link members should use.</FieldHint>
             <FieldMessage message={errors.location?.message} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="meeting-late-fee">Late attendance penalty</Label>
+            <Input
+              id="meeting-late-fee"
+              min="0"
+              step="0.01"
+              type="number"
+              {...register("lateFee")}
+            />
+            <FieldHint>Members marked after the lateness cutoff receive this charge.</FieldHint>
+            <FieldMessage message={errors.lateFee?.message} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="meeting-absence-fee">Absence penalty</Label>
+            <Input
+              id="meeting-absence-fee"
+              min="0"
+              step="0.01"
+              type="number"
+              {...register("absenceFee")}
+            />
+            <FieldHint>Members not marked before attendance closes receive this charge.</FieldHint>
+            <FieldMessage message={errors.absenceFee?.message} />
           </div>
 
           <div className="space-y-2 md:col-span-2">
@@ -939,8 +973,7 @@ export default function AdminGovernancePageView({
               Meetings, attendance, and attendance charges
             </h2>
             <p className="max-w-3xl text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-5">
-              Late arrivals attract {formatNaira(MEETING_LATE_FEE)} while absences attract{" "}
-              {formatNaira(MEETING_ABSENT_FEE)}.
+              Each meeting or event uses the late and absence penalties selected by the administrator when it is scheduled.
             </p>
           </div>
 

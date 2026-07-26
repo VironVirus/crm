@@ -1,5 +1,14 @@
 import { redirect } from "next/navigation";
 import MemberDashboardPageView from "@/features/portal/dashboard/page-view";
+import {
+  getCurrentMonthStart,
+  type ChargeCategory,
+  type ChargeStatus,
+  type PortalChargeItem,
+  type PortalInvestmentPosition,
+  type PortalMonthlyDueSummary,
+} from "@/lib/cooperative-finance";
+import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
 import { getMemberTier } from "@/lib/member-tier";
 import { syncMeetingState } from "@/lib/meetings/server";
 import { ensureMemberRecord } from "@/lib/members";
@@ -117,7 +126,24 @@ type LoanGuarantorRecord = {
 
 type MemberChargeRecord = {
   amount: number | string | null;
-  status: "paid" | "pending" | "waived";
+  charge_category: ChargeCategory;
+  created_at: string;
+  due_at: string | null;
+  id: string;
+  status: ChargeStatus;
+  title: string;
+};
+
+type MemberInvestmentRecord = {
+  amount: number | string | null;
+  id: string;
+  investment_plan_id: string;
+};
+
+type InvestmentPlanRecord = {
+  id: string;
+  name: string;
+  projected_return_rate: number | string | null;
 };
 
 function clampPercent(value: number) {
@@ -159,6 +185,7 @@ export default async function MemberDashboardPage() {
     redirect("/login?next=/portal");
   }
 
+  const duesGenerationError = await ensureCurrentMonthlyDues(admin);
   await syncMeetingState(admin);
 
   const [
@@ -169,6 +196,7 @@ export default async function MemberDashboardPage() {
     shareHoldingResult,
     openMeetingsCountResult,
     pendingChargesResult,
+    memberInvestmentsResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -205,10 +233,15 @@ export default async function MemberDashboardPage() {
       .eq("status", "scheduled"),
     supabase
       .from("member_charges")
-      .select("amount, status")
+      .select(
+        "id, amount, charge_category, title, due_at, status, created_at",
+      )
       .eq("member_id", user.id)
-      .eq("status", "pending")
-      .in("source_type", ["meeting_late", "meeting_absence"]),
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("member_investments")
+      .select("id, investment_plan_id, amount")
+      .eq("member_id", user.id),
   ]);
   const profile = profileResult.data as ProfileRecord | null;
   const ensuredMemberResult = await ensureMemberRecord(admin, {
@@ -484,10 +517,79 @@ export default async function MemberDashboardPage() {
     (guarantorRequestsResult.data as LoanGuarantorRecord[] | null) ?? [];
   const pendingCharges =
     (pendingChargesResult.data as MemberChargeRecord[] | null) ?? [];
-  const pendingChargesAmount = pendingCharges.reduce(
-    (total, charge) => total + parseMoney(charge.amount),
+  const memberInvestments =
+    (memberInvestmentsResult.data as MemberInvestmentRecord[] | null) ?? [];
+  const investmentPlanIds = Array.from(
+    new Set(memberInvestments.map((investment) => investment.investment_plan_id)),
+  );
+  const investmentPlansResult =
+    investmentPlanIds.length > 0
+      ? await supabase
+          .from("investment_plans")
+          .select("id, name, projected_return_rate")
+          .in("id", investmentPlanIds)
+      : { data: [] as InvestmentPlanRecord[], error: null };
+  const investmentPlanMap = new Map(
+    ((investmentPlansResult.data as InvestmentPlanRecord[] | null) ?? []).map(
+      (plan) => [plan.id, plan] as const,
+    ),
+  );
+  const investmentPositionMap = new Map<string, PortalInvestmentPosition>();
+
+  memberInvestments.forEach((investment) => {
+    const plan = investmentPlanMap.get(investment.investment_plan_id);
+    const current = investmentPositionMap.get(investment.investment_plan_id) ?? {
+      amount: 0,
+      planId: investment.investment_plan_id,
+      planName: plan?.name ?? "Investment plan",
+      projectedReturnRate:
+        plan?.projected_return_rate === null ||
+        plan?.projected_return_rate === undefined
+          ? null
+          : parseMoney(plan.projected_return_rate),
+    };
+    current.amount += parseMoney(investment.amount);
+    investmentPositionMap.set(investment.investment_plan_id, current);
+  });
+  const investmentPositions = Array.from(investmentPositionMap.values()).sort(
+    (left, right) => right.amount - left.amount,
+  );
+  const totalInvestmentAmount = investmentPositions.reduce(
+    (total, position) => total + position.amount,
     0,
   );
+  const pendingChargeItems: PortalChargeItem[] = pendingCharges
+    .filter((charge) => charge.status === "pending")
+    .map((charge) => ({
+      amount: parseMoney(charge.amount),
+      category: charge.charge_category,
+      dueAt: charge.due_at,
+      id: charge.id,
+      status: charge.status,
+      title: charge.title,
+    }));
+  const pendingChargesAmount = pendingCharges.reduce(
+    (total, charge) =>
+      charge.status === "pending" ? total + parseMoney(charge.amount) : total,
+    0,
+  );
+  const currentMonthStart = getCurrentMonthStart();
+  const currentMonthlyDueRecord = pendingCharges.find(
+    (charge) =>
+      charge.charge_category === "monthly_due" &&
+      charge.created_at.slice(0, 10) >= currentMonthStart,
+  );
+  const monthlyDue: PortalMonthlyDueSummary = currentMonthlyDueRecord
+    ? {
+        amount: parseMoney(currentMonthlyDueRecord.amount),
+        dueAt: currentMonthlyDueRecord.due_at,
+        status: currentMonthlyDueRecord.status,
+      }
+    : {
+        amount: 10_000,
+        dueAt: null,
+        status: "pending",
+      };
   const errors = [
     profileResult.error?.message,
     ensuredMemberResult.error?.message,
@@ -503,6 +605,9 @@ export default async function MemberDashboardPage() {
     loanProductsResult.error?.message,
     openMeetingsCountResult.error?.message,
     pendingChargesResult.error?.message,
+    memberInvestmentsResult.error?.message,
+    investmentPlansResult.error?.message,
+    duesGenerationError,
   ].filter(Boolean);
 
   return (
@@ -512,14 +617,18 @@ export default async function MemberDashboardPage() {
       memberName={profile?.full_name ?? user.email ?? "Member"}
       memberNumber={profile?.member_number ?? null}
       memberTier={getMemberTier(member)}
+      investmentPositions={investmentPositions}
+      monthlyDue={monthlyDue}
       openMeetingCount={openMeetingsCountResult.count ?? 0}
+      pendingChargeItems={pendingChargeItems}
       pendingChargesAmount={pendingChargesAmount}
-      pendingChargesCount={pendingCharges.length}
+      pendingChargesCount={pendingChargeItems.length}
       pendingGuarantorCount={guarantorRequests.length}
       recentTransactions={recentTransactions}
       savingsBalance={savingsBalance}
       savingsTrend={savingsTrend}
       shares={shares}
+      totalInvestmentAmount={totalInvestmentAmount}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
+import { formatNaira } from "@/lib/loans";
 import { sendBatchMemberNotifications } from "@/lib/notification-dispatch";
 import { adminMeetingSchema } from "@/lib/validation/admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -54,15 +55,17 @@ export async function POST(request: NextRequest) {
     .from("meetings")
     .insert({
       agenda: parsed.data.agenda || null,
+      absence_fee: parsed.data.absenceFee,
       attendance_closes_at: parsed.data.attendanceClosesAt,
       created_by: user.id,
       lateness_starts_at: parsed.data.latenessStartsAt,
+      late_fee: parsed.data.lateFee,
       location: parsed.data.location || null,
       reminder_message: parsed.data.reminderMessage || null,
       starts_at: parsed.data.startsAt,
       title: parsed.data.title,
     })
-    .select("id, title, starts_at, lateness_starts_at, location")
+    .select("id, title, starts_at, lateness_starts_at, location, late_fee, absence_fee")
     .single();
 
   if (meetingError || !meeting) {
@@ -103,7 +106,7 @@ export async function POST(request: NextRequest) {
             dateStyle: "medium",
             timeStyle: "short",
           },
-        ).format(new Date(meeting.lateness_starts_at))}. Please attend on time and mark your attendance from the member portal.`,
+        ).format(new Date(meeting.lateness_starts_at))}. Late attendance attracts ${formatNaira(Number(meeting.late_fee))}; absence attracts ${formatNaira(Number(meeting.absence_fee))}. Please attend on time and mark your attendance from the member portal.`,
         title: "New cooperative meeting",
         type: "meeting_update",
       })),

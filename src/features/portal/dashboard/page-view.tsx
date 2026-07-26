@@ -4,8 +4,10 @@ import Link from "next/link";
 import { type ComponentType } from "react";
 import {
   AlertTriangle,
+  Building2,
   CalendarClock,
   PiggyBank,
+  ReceiptText,
   ShieldCheck,
   TrendingUp,
 } from "lucide-react";
@@ -42,6 +44,12 @@ import {
   formatNaira,
 } from "@/lib/loans";
 import {
+  getChargeCategoryLabel,
+  type PortalChargeItem,
+  type PortalInvestmentPosition,
+  type PortalMonthlyDueSummary,
+} from "@/lib/cooperative-finance";
+import {
   getPortalTransactionLabel,
   getPortalTransactionTone,
   type PortalDashboardActiveLoanSummary,
@@ -57,7 +65,10 @@ type MemberDashboardPageViewProps = {
   memberName: string;
   memberNumber: string | null;
   memberTier: MemberTier;
+  investmentPositions: PortalInvestmentPosition[];
+  monthlyDue: PortalMonthlyDueSummary;
   openMeetingCount: number;
+  pendingChargeItems: PortalChargeItem[];
   pendingChargesAmount: number;
   pendingChargesCount: number;
   pendingGuarantorCount: number;
@@ -65,6 +76,7 @@ type MemberDashboardPageViewProps = {
   savingsBalance: number;
   savingsTrend: SavingsGrowthPoint[];
   shares: PortalDashboardShareSummary;
+  totalInvestmentAmount: number;
 };
 
 function formatSignedAmount(value: number) {
@@ -134,7 +146,10 @@ export default function MemberDashboardPageView({
   memberName,
   memberNumber,
   memberTier,
+  investmentPositions,
+  monthlyDue,
   openMeetingCount,
+  pendingChargeItems,
   pendingChargesAmount,
   pendingChargesCount,
   pendingGuarantorCount,
@@ -142,6 +157,7 @@ export default function MemberDashboardPageView({
   savingsBalance,
   savingsTrend,
   shares,
+  totalInvestmentAmount,
 }: MemberDashboardPageViewProps) {
   const tierMeta = getMemberTierMeta(memberTier);
   const { resolvedTheme } = useTheme();
@@ -209,14 +225,16 @@ export default function MemberDashboardPageView({
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {pendingChargesCount > 0
-                      ? `${pendingChargesCount} pending meeting charge${pendingChargesCount === 1 ? "" : "s"} worth ${formatNaira(pendingChargesAmount)}`
+                      ? `${pendingChargesCount} pending cooperative obligation${pendingChargesCount === 1 ? "" : "s"} worth ${formatNaira(pendingChargesAmount)}`
                       : "Open governance to mark attendance before the close time."}
                   </p>
                 </div>
               </div>
 
               <Button asChild variant="secondary">
-                <Link href="/portal/governance">Open governance</Link>
+                <a href={pendingChargesCount > 0 ? "#member-obligations" : "/portal/governance"}>
+                  {pendingChargesCount > 0 ? "Review obligations" : "Open governance"}
+                </a>
               </Button>
             </CardContent>
           </Card>
@@ -224,7 +242,7 @@ export default function MemberDashboardPageView({
       ) : null}
 
       <section className="-mx-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
-        <div className="grid auto-cols-[86%] grid-flow-col gap-4 sm:auto-cols-[280px] md:grid-flow-row md:auto-cols-auto md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid auto-cols-[86%] grid-flow-col gap-4 sm:auto-cols-[280px] md:grid-flow-row md:auto-cols-auto md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             description="Mandatory and voluntary balances together."
             icon={PiggyBank}
@@ -262,6 +280,25 @@ export default function MemberDashboardPageView({
             value={memberTier !== "tier_3" ? "Tier 3" : formatNaira(shares.totalValue)}
           />
           <SummaryCard
+            description={
+              monthlyDue.status === "paid"
+                ? "Your dues for this month are settled."
+                : monthlyDue.dueAt
+                  ? `Due ${formatDisplayDate(monthlyDue.dueAt)}.`
+                  : "Automated cooperative dues for this month."
+            }
+            icon={ReceiptText}
+            label="Monthly dues"
+            tone={monthlyDue.status === "pending" ? "danger" : "default"}
+            value={formatNaira(monthlyDue.amount)}
+          />
+          <SummaryCard
+            description={`${investmentPositions.length.toLocaleString("en-NG")} active investment position${investmentPositions.length === 1 ? "" : "s"}.`}
+            icon={Building2}
+            label="Investments"
+            value={formatNaira(totalInvestmentAmount)}
+          />
+          <SummaryCard
             description="Requests waiting for your response."
             icon={ShieldCheck}
             label="Guarantor requests"
@@ -269,13 +306,105 @@ export default function MemberDashboardPageView({
             value={pendingGuarantorCount.toLocaleString("en-NG")}
           />
           <SummaryCard
-            description="Late or absent meeting charges still on your account."
+            description="Dues, occasion levies, and attendance penalties still pending."
             icon={AlertTriangle}
             label="Pending charges"
             tone={pendingChargesCount > 0 ? "danger" : "default"}
             value={formatNaira(pendingChargesAmount)}
           />
         </div>
+      </section>
+
+      <section
+        className="grid scroll-mt-28 gap-4 xl:grid-cols-[0.95fr_1.05fr]"
+        id="member-obligations"
+      >
+        <Card>
+          <CardHeader>
+            <Badge className="w-fit" variant="secondary">
+              Investments
+            </Badge>
+            <CardTitle className="font-['Outfit'] text-xl text-foreground sm:text-2xl">
+              My investment plans
+            </CardTitle>
+            <CardDescription>
+              Amounts recorded for you by the cooperative administrator.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {investmentPositions.length > 0 ? (
+              investmentPositions.map((position) => (
+                <div
+                  className="rounded-2xl border border-border bg-secondary p-4"
+                  key={position.planId}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {position.planName}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {position.projectedReturnRate === null
+                          ? "Return information will be updated by the cooperative."
+                          : `${position.projectedReturnRate.toFixed(2)}% projected return`}
+                      </p>
+                    </div>
+                    <p className="font-['Outfit'] text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                      {formatNaira(position.amount)}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
+                No investment has been recorded for you yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <Badge className="w-fit">Obligations</Badge>
+            <CardTitle className="font-['Outfit'] text-xl text-foreground sm:text-2xl">
+              What I currently owe
+            </CardTitle>
+            <CardDescription>
+              Monthly dues, member occasions, and meeting or event penalties.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pendingChargeItems.length > 0 ? (
+              pendingChargeItems.map((charge) => (
+                <div
+                  className="flex flex-col gap-3 rounded-2xl border border-border bg-secondary p-4 sm:flex-row sm:items-center sm:justify-between"
+                  key={charge.id}
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-foreground">{charge.title}</p>
+                      <Badge variant="outline">
+                        {getChargeCategoryLabel(charge.category)}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {charge.dueAt
+                        ? `Due ${formatDisplayDate(charge.dueAt)}`
+                        : "No due date set"}
+                    </p>
+                  </div>
+                  <p className="font-['Outfit'] text-lg font-semibold text-rose-700 dark:text-rose-100">
+                    {formatNaira(charge.amount)}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-5 text-sm text-emerald-700 dark:text-emerald-100">
+                You have no outstanding cooperative obligations.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">

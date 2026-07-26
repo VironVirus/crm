@@ -11,11 +11,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getPortalFinancialRecordsData } from "@/lib/financials";
-import { formatNaira } from "@/lib/loans";
+import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
+import { formatNaira, parseMoney } from "@/lib/loans";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function PortalFinancialsPage() {
   const supabase = createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -23,6 +26,35 @@ export default async function PortalFinancialsPage() {
   if (!user) {
     redirect("/login?next=/portal/financials");
   }
+
+  await ensureCurrentMonthlyDues(admin);
+
+  const [memberInvestmentsResult, memberChargesResult] = await Promise.all([
+    supabase
+      .from("member_investments")
+      .select("amount")
+      .eq("member_id", user.id),
+    supabase
+      .from("member_charges")
+      .select("amount, charge_category, status")
+      .eq("member_id", user.id),
+  ]);
+  const memberInvestments =
+    (memberInvestmentsResult.data as Array<{ amount: number | string | null }> | null) ?? [];
+  const memberCharges =
+    (memberChargesResult.data as Array<{
+      amount: number | string | null;
+      charge_category: "manual" | "meeting_penalty" | "monthly_due" | "occasion_levy";
+      status: "paid" | "pending" | "waived";
+    }> | null) ?? [];
+  const myInvestmentTotal = memberInvestments.reduce(
+    (total, investment) => total + parseMoney(investment.amount),
+    0,
+  );
+  const pendingByCategory = (category: typeof memberCharges[number]["charge_category"]) =>
+    memberCharges
+      .filter((charge) => charge.status === "pending" && charge.charge_category === category)
+      .reduce((total, charge) => total + parseMoney(charge.amount), 0);
 
   const {
     accountRows,
@@ -35,6 +67,13 @@ export default async function PortalFinancialsPage() {
   const totalShares = memberExposureRows.reduce((total, row) => total + row.shares, 0);
   const totalSavings = memberExposureRows.reduce((total, row) => total + row.savings, 0);
   const totalLoans = memberExposureRows.reduce((total, row) => total + row.loans, 0);
+  const combinedDataError = [
+    dataError,
+    memberInvestmentsResult.error?.message,
+    memberChargesResult.error?.message,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="space-y-6">
@@ -58,11 +97,30 @@ export default async function PortalFinancialsPage() {
         </div>
       </section>
 
-      {dataError ? (
+      {combinedDataError ? (
         <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
-          {dataError}
+          {combinedDataError}
         </div>
       ) : null}
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base text-muted-foreground">My investments</CardTitle></CardHeader>
+          <CardContent className="font-['Outfit'] text-3xl font-semibold text-foreground">{formatNaira(myInvestmentTotal)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base text-muted-foreground">Monthly dues outstanding</CardTitle></CardHeader>
+          <CardContent className="font-['Outfit'] text-3xl font-semibold text-foreground">{formatNaira(pendingByCategory("monthly_due"))}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base text-muted-foreground">Occasion levies outstanding</CardTitle></CardHeader>
+          <CardContent className="font-['Outfit'] text-3xl font-semibold text-foreground">{formatNaira(pendingByCategory("occasion_levy"))}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base text-muted-foreground">Attendance penalties</CardTitle></CardHeader>
+          <CardContent className="font-['Outfit'] text-3xl font-semibold text-foreground">{formatNaira(pendingByCategory("meeting_penalty"))}</CardContent>
+        </Card>
+      </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card>
