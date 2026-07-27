@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -90,7 +92,7 @@ export function SharePurchaseDialog({
   const projectedAmount = sharesCount * shareValue;
 
   const onSubmit = handleSubmit(async (values) => {
-    const response = await fetch("/api/admin/shares/purchases", {
+    const response = await staticApiFetch("/api/admin/shares/purchases", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

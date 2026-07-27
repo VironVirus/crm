@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,7 +36,7 @@ export function PendingGuarantorRequestsPanel({
     setFeedbackMessage(null);
     setErrorMessage(null);
 
-    const response = await fetch(
+    const response = await staticApiFetch(
       `/api/guarantor-requests/${guarantorRequestId}/respond`,
       {
         method: "POST",

@@ -1,42 +1,19 @@
-import { redirect } from "next/navigation";
-import MockPaymentPageView from "@/features/portal/payments/mock/page-view";
-import { isFlutterwaveMockModeEnabled } from "@/lib/env/server";
-import { readMockFlutterwaveSessionToken } from "@/lib/flutterwave/mock";
-import { formatPaymentAmount, formatPaymentTypeLabel } from "@/lib/payments";
+"use client";
 
-export default async function MockPaymentPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{
-    session?: string;
-  }>;
-}) {
-  const resolvedSearchParams = await searchParams;
+import Link from "next/link";
+import { useEffect } from "react";
 
-  if (!isFlutterwaveMockModeEnabled()) {
-    redirect("/portal/actions");
-  }
+export default function MockPaymentPage() {
+  useEffect(() => {
+    window.location.replace("/portal/actions/");
+  }, []);
 
-  if (!resolvedSearchParams?.session) {
-    redirect("/portal/actions");
-  }
-
-  try {
-    const session = readMockFlutterwaveSessionToken(
-      resolvedSearchParams.session,
-    );
-
-    return (
-      <MockPaymentPageView
-        amountLabel={formatPaymentAmount(session.amount)}
-        description={session.description}
-        memberName={session.memberName}
-        memberNumber={session.memberNumber}
-        paymentTypeLabel={formatPaymentTypeLabel(session.paymentType)}
-        sessionToken={resolvedSearchParams.session}
-      />
-    );
-  } catch {
-    redirect("/portal/actions");
-  }
+  return (
+    <div className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground">
+      Browser mock payments are disabled in the static production build.{" "}
+      <Link className="text-emerald-700 underline dark:text-emerald-200" href="/portal/actions/">
+        Return to member actions
+      </Link>
+    </div>
+  );
 }

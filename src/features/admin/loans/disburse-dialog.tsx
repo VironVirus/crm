@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -78,7 +80,7 @@ export function DisburseLoanDialog({
 
     setServerError(null);
 
-    const response = await fetch(
+    const response = await staticApiFetch(
       `/api/admin/loan-applications/${application.id}/disburse`,
       {
         method: "POST",

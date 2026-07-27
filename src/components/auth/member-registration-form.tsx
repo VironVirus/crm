@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import Link from "next/link";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -128,7 +130,7 @@ export function MemberRegistrationForm() {
         return;
       }
 
-      const response = await fetch("/api/member-registration/complete", {
+      const response = await staticApiFetch("/api/member-registration/complete", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -178,7 +180,7 @@ export function MemberRegistrationForm() {
     setIsSendingCode(true);
 
     try {
-      const response = await fetch("/api/member-registration", {
+      const response = await staticApiFetch("/api/member-registration", {
         method: "POST",
         body: buildRegistrationFormData(values),
       });

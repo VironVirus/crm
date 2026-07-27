@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -120,7 +122,7 @@ function ManageMemberDialog({
   const submit = handleSubmit(async (values) => {
     setServerError(null);
 
-    const response = await fetch(`/api/admin/members/${member.id}`, {
+    const response = await staticApiFetch(`/api/admin/members/${member.id}`, {
       body: JSON.stringify(values),
       headers: {
         "Content-Type": "application/json",

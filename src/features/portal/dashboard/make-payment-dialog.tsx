@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CreditCard, Loader2, PiggyBank } from "lucide-react";
@@ -167,7 +169,7 @@ export function MakePaymentDialog({
       return;
     }
 
-    const response = await fetch("/api/payments/initiate", {
+    const response = await staticApiFetch("/api/payments/initiate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

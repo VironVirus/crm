@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   closestCenter,
@@ -400,7 +402,7 @@ export default function AdminLoansPageView({
       ),
     );
 
-    const response = await fetch(
+    const response = await staticApiFetch(
       `/api/admin/loan-applications/${applicationId}/status`,
       {
         method: "PATCH",
@@ -441,7 +443,7 @@ export default function AdminLoansPageView({
     setFeedbackMessage(null);
     setPendingAction(`${activeApplication.id}:approve`);
 
-    const response = await fetch(
+    const response = await staticApiFetch(
       `/api/admin/loan-applications/${activeApplication.id}/approve`,
       {
         method: "POST",

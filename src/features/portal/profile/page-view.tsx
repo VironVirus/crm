@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { type ChangeEvent, useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type Resolver, useForm } from "react-hook-form";
@@ -147,7 +149,7 @@ export default function MemberProfilePageView({
     setProfileError(null);
     setProfileMessage(null);
 
-    const response = await fetch("/api/portal/profile/next-of-kin", {
+    const response = await staticApiFetch("/api/portal/profile/next-of-kin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -193,7 +195,7 @@ export default function MemberProfilePageView({
       body.set("utilityBill", values.utilityBill);
     }
 
-    const response = await fetch("/api/portal/profile/kyc", {
+    const response = await staticApiFetch("/api/portal/profile/kyc", {
       method: "POST",
       body,
     });

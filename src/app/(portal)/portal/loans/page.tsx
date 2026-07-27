@@ -1,6 +1,15 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import MemberLoansPageView from "@/features/portal/loans/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { getMemberTier } from "@/lib/member-tier";
+import { staticApiFetch } from "@/lib/static-api";
 import {
   calculateLoanEstimate,
   parseMoney,
@@ -11,8 +20,6 @@ import {
   type LoanProductOption,
   type MemberLoanApplicationRow,
 } from "@/lib/loans";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
   id: string;
@@ -100,71 +107,52 @@ function getLoanProductRelation(
   return Array.isArray(relation) ? (relation[0] ?? null) : relation;
 }
 
-export default async function PortalLoansPage() {
-  const sessionClient = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await sessionClient.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/portal/loans");
-  }
-
-  const admin = createSupabaseAdminClient();
-
+async function loadPortalLoansPage(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<ComponentProps<typeof MemberLoansPageView>> {
   const [
     profileResult,
     memberResult,
     productsResult,
     applicationsResult,
     savingsResult,
-    registeredMembersResult,
   ] = await Promise.all([
-    admin
+    supabase
       .from("profiles")
       .select("id, full_name, email, phone, member_number, status")
       .eq("id", user.id)
       .maybeSingle(),
-    admin
+    supabase
       .from("members")
       .select(
         "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
       )
       .eq("id", user.id)
       .maybeSingle(),
-    admin
+    supabase
       .from("loan_products")
       .select(
         "id, name, description, interest_rate, interest_type, min_amount, max_amount, min_tenure_months, max_tenure_months, max_loan_to_savings_ratio, maximum_disbursable_amount, processing_fee_rate, penalty_rate, terms_summary, is_active",
       )
       .eq("is_active", true)
       .order("name"),
-    admin
+    supabase
       .from("loan_applications")
       .select(
         "id, loan_product_id, amount_requested, tenure_months, purpose, status, applied_at, rejection_reason, loan_product:loan_products(name, interest_rate, interest_type)",
       )
       .eq("member_id", user.id)
       .order("applied_at", { ascending: false }),
-    admin
+    supabase
       .from("savings_accounts")
       .select("balance")
       .eq("member_id", user.id)
       .eq("status", "active"),
-    admin
-      .from("members")
-      .select(
-        "id, onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-      )
-      .eq("onboarding_status", "registered"),
   ]);
 
   const currentMember = memberResult.data as MemberRecord | null;
   const memberTier = getMemberTier(currentMember);
-
-  if (memberTier !== "tier_3") {
-    redirect("/portal/profile");
-  }
 
   const rawApplications =
     (applicationsResult.data as LoanApplicationRecord[] | null) ?? [];
@@ -172,7 +160,7 @@ export default async function PortalLoansPage() {
 
   const guarantorsResult =
     applicationIds.length > 0
-      ? await admin
+      ? await supabase
           .from("loan_guarantors")
           .select(
             "id, loan_application_id, guarantor_member_id, status, invited_at, responded_at, liability_amount, released_at",
@@ -181,36 +169,14 @@ export default async function PortalLoansPage() {
           .order("invited_at", { ascending: true })
       : { data: [] as LoanGuarantorRecord[], error: null };
 
-  const guarantorProfileIds = Array.from(
-    new Set(
-      ((guarantorsResult.data as LoanGuarantorRecord[] | null) ?? []).map(
-        (record) => record.guarantor_member_id,
-      ),
-    ),
-  );
-
-  const guarantorProfilesResult =
-    guarantorProfileIds.length > 0
-      ? await admin
-          .from("profiles")
-          .select("id, full_name, email, phone, member_number, status")
-          .in("id", guarantorProfileIds)
-      : { data: [] as ProfileRecord[], error: null };
-
-  const eligibleMemberIds = ((registeredMembersResult.data as MemberRecord[] | null) ?? [])
-    .filter((member) => getMemberTier(member) === "tier_3")
-    .map((member) => member.id)
-    .filter((memberId) => memberId !== user.id);
-
-  const guarantorCandidatesResult =
-    eligibleMemberIds.length > 0
-      ? await admin
-          .from("profiles")
-          .select("id, full_name, email, phone, member_number, status")
-          .in("id", eligibleMemberIds)
-          .eq("status", "active")
-          .order("full_name")
-      : { data: [] as ProfileRecord[], error: null };
+  const supportResponse = await staticApiFetch("/api/portal/loan-support");
+  const supportPayload = (await supportResponse.json().catch(() => null)) as
+    | { candidates?: ProfileRecord[]; message?: string; profiles?: ProfileRecord[] }
+    | null;
+  const guarantorProfiles = supportResponse.ok ? supportPayload?.profiles ?? [] : [];
+  const guarantorCandidateProfiles = supportResponse.ok
+    ? supportPayload?.candidates ?? []
+    : [];
 
   const loanProducts = ((productsResult.data as LoanProductRecord[] | null) ?? []).map(
     (product) =>
@@ -236,10 +202,10 @@ export default async function PortalLoansPage() {
   );
 
   const guarantorProfileMap = new Map(
-    (((guarantorProfilesResult.data as ProfileRecord[] | null) ?? []).map((profile) => [
+    guarantorProfiles.map((profile) => [
       profile.id,
       profile,
-    ])) satisfies Array<[string, ProfileRecord]>,
+    ]) satisfies Array<[string, ProfileRecord]>,
   );
   const guarantorsByApplication = new Map<
     string,
@@ -304,7 +270,7 @@ export default async function PortalLoansPage() {
     .filter((application) => application.status !== "draft");
 
   const guarantorCandidates = (
-    (guarantorCandidatesResult.data as ProfileRecord[] | null) ?? []
+    guarantorCandidateProfiles
   ).map(
     (profile) =>
       ({
@@ -321,28 +287,38 @@ export default async function PortalLoansPage() {
   ).reduce((total, account) => total + parseMoney(account.balance), 0);
 
   const errors = [
+    memberTier !== "tier_3"
+      ? "Complete your next-of-kin and KYC profile before applying for a loan."
+      : null,
     profileResult.error?.message,
     memberResult.error?.message,
     productsResult.error?.message,
     applicationsResult.error?.message,
     savingsResult.error?.message,
-    registeredMembersResult.error?.message,
     guarantorsResult.error?.message,
-    guarantorProfilesResult.error?.message,
-    guarantorCandidatesResult.error?.message,
+    supportResponse.ok
+      ? null
+      : supportPayload?.message ?? "Unable to load eligible guarantors.",
   ].filter(Boolean);
 
   const profile = (profileResult.data as ProfileRecord | null) ?? null;
 
-  return (
-    <MemberLoansPageView
-      applications={applications}
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      guarantorCandidates={guarantorCandidates}
-      loanProducts={loanProducts}
-      memberName={profile?.full_name ?? user.email ?? "Member"}
-      memberNumber={profile?.member_number ?? null}
-      savingsBalance={savingsBalance}
-    />
-  );
+  return {
+    applications,
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    guarantorCandidates,
+    loanProducts,
+    memberName: profile?.full_name ?? user.email ?? "Member",
+    memberNumber: profile?.member_number ?? null,
+    savingsBalance,
+  };
+}
+
+export default function PortalLoansPage() {
+  const { data, error, isLoading } = useStaticPageData(loadPortalLoansPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading loan products…" />;
+  if (!data) return <StaticPageError>{error ?? "Loan records are unavailable."}</StaticPageError>;
+
+  return <MemberLoansPageView {...data} dataError={data.dataError ?? error} />;
 }

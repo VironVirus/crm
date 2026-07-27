@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -43,7 +45,7 @@ const SELECT_CLASS_NAME =
   "flex h-11 w-full rounded-2xl border border-input bg-background/70 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50";
 
 async function postAdminAction(body: unknown) {
-  const response = await fetch("/api/admin/cooperative-finance", {
+  const response = await staticApiFetch("/api/admin/cooperative-finance", {
     body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
     method: "POST",

@@ -1,9 +1,7 @@
-import "server-only";
-
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseMoney } from "@/lib/loans";
 
-type AdminClient = ReturnType<typeof createSupabaseAdminClient>;
+type AdminClient = SupabaseClient;
 
 type AccountRecord = {
   account_code: string;
@@ -105,7 +103,7 @@ function getNormalBalance({
 }
 
 export async function getPortalFinancialRecordsData(
-  admin: AdminClient = createSupabaseAdminClient(),
+  admin: AdminClient,
 ): Promise<PortalFinancialRecordsData> {
   const currentMonthStart = monthStartIso();
 

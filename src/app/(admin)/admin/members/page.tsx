@@ -1,7 +1,15 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminMembersPageView from "@/features/admin/members/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { type CooperativeRole } from "@/lib/auth/roles";
 import { getMemberTier } from "@/lib/member-tier";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type ProfileRecord = {
   email: string;
@@ -49,8 +57,9 @@ function parseMoney(value: number | string | null | undefined) {
   return 0;
 }
 
-export default async function AdminMembersPage() {
-  const admin = createSupabaseAdminClient();
+async function loadAdminMembersPage(
+  admin: SupabaseClient,
+): Promise<ComponentProps<typeof AdminMembersPageView>> {
   const [profilesResult, membersResult, savingsResult, sharesResult] = await Promise.all([
     admin
       .from("profiles")
@@ -151,11 +160,18 @@ export default async function AdminMembersPage() {
     sharesResult.error?.message,
   ].filter(Boolean);
 
-  return (
-    <AdminMembersPageView
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      rows={rows}
-      totals={totals}
-    />
-  );
+  return {
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    rows,
+    totals,
+  };
+}
+
+export default function AdminMembersPage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminMembersPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading members…" />;
+  if (!data) return <StaticPageError>{error ?? "Member records are unavailable."}</StaticPageError>;
+
+  return <AdminMembersPageView {...data} dataError={data.dataError ?? error} />;
 }

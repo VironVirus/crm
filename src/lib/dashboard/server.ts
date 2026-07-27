@@ -1,6 +1,4 @@
-import "server-only";
-
-import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { type LoanStatus } from "@/lib/loans";
 import {
   type DashboardKpiSnapshot,
@@ -14,7 +12,6 @@ import {
   roundDashboardCurrency,
 } from "@/lib/dashboard";
 import { loadRecentDashboardActivity } from "@/lib/dashboard/activity";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type MemberRecord = {
   created_at: string;
@@ -239,9 +236,7 @@ function buildMemberGrowthSeries({
   });
 }
 
-export async function getAdminDashboardData() {
-  const admin = createSupabaseAdminClient();
-  const duesGenerationError = await ensureCurrentMonthlyDues(admin);
+export async function getAdminDashboardData(admin: SupabaseClient) {
   const {
     currentMonthKey,
     currentMonthStartTimestamp,
@@ -324,7 +319,6 @@ export async function getAdminDashboardData() {
     pendingLoanReviewCountResult.error?.message,
     memberInvestmentsResult.error?.message,
     pendingChargesResult.error?.message,
-    duesGenerationError,
     recentActivityResult.error,
   ].filter(Boolean);
 

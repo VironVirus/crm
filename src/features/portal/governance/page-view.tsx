@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -63,7 +65,7 @@ function MarkAttendanceButton({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/portal/meetings/${meeting.id}/attendance`, {
+      const response = await staticApiFetch(`/api/portal/meetings/${meeting.id}/attendance`, {
         method: "POST",
       });
       const payload = (await response.json().catch(() => null)) as

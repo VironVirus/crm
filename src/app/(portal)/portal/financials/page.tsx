@@ -1,6 +1,15 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -10,25 +19,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getPortalFinancialRecordsData } from "@/lib/financials";
-import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
+import {
+  type PortalFinancialRecordsData,
+} from "@/lib/financials";
 import { formatNaira, parseMoney } from "@/lib/loans";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { staticApiFetch } from "@/lib/static-api";
 
-export default async function PortalFinancialsPage() {
-  const supabase = await createServerSupabaseClient();
-  const admin = createSupabaseAdminClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+type MemberChargeRecord = {
+  amount: number | string | null;
+  charge_category: "manual" | "meeting_penalty" | "monthly_due" | "occasion_levy";
+  status: "paid" | "pending" | "waived";
+};
 
-  if (!user) {
-    redirect("/login?next=/portal/financials");
-  }
+type PortalFinancialsPageData = PortalFinancialRecordsData & {
+  combinedDataError: string;
+  memberCharges: MemberChargeRecord[];
+  myInvestmentTotal: number;
+};
 
-  await ensureCurrentMonthlyDues(admin);
-
+async function loadPortalFinancialsPage(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<PortalFinancialsPageData> {
   const [memberInvestmentsResult, memberChargesResult] = await Promise.all([
     supabase
       .from("member_investments")
@@ -42,38 +54,99 @@ export default async function PortalFinancialsPage() {
   const memberInvestments =
     (memberInvestmentsResult.data as Array<{ amount: number | string | null }> | null) ?? [];
   const memberCharges =
-    (memberChargesResult.data as Array<{
-      amount: number | string | null;
-      charge_category: "manual" | "meeting_penalty" | "monthly_due" | "occasion_levy";
-      status: "paid" | "pending" | "waived";
-    }> | null) ?? [];
+    (memberChargesResult.data as MemberChargeRecord[] | null) ?? [];
   const myInvestmentTotal = memberInvestments.reduce(
     (total, investment) => total + parseMoney(investment.amount),
     0,
   );
-  const pendingByCategory = (category: typeof memberCharges[number]["charge_category"]) =>
-    memberCharges
-      .filter((charge) => charge.status === "pending" && charge.charge_category === category)
-      .reduce((total, charge) => total + parseMoney(charge.amount), 0);
 
-  const {
-    accountRows,
-    collectionsThisMonth,
-    dataError,
-    donationTotal,
-    memberExposureRows,
-    totalsByType,
-  } = await getPortalFinancialRecordsData();
-  const totalShares = memberExposureRows.reduce((total, row) => total + row.shares, 0);
-  const totalSavings = memberExposureRows.reduce((total, row) => total + row.savings, 0);
-  const totalLoans = memberExposureRows.reduce((total, row) => total + row.loans, 0);
+  const financialResponse = await staticApiFetch(
+    "/api/portal/reports/financial-records",
+  );
+  const financialPayload = (await financialResponse.json().catch(() => null)) as
+    | (PortalFinancialRecordsData & { message?: string })
+    | null;
+  const financialData: PortalFinancialRecordsData =
+    financialResponse.ok && financialPayload
+      ? financialPayload
+      : {
+          accountRows: [],
+          collectionsThisMonth: 0,
+          dataError:
+            financialPayload?.message ??
+            "The cooperative financial summary is unavailable right now.",
+          donationTotal: 0,
+          memberExposureRows: [],
+          totalsByType: {
+            asset: 0,
+            equity: 0,
+            expense: 0,
+            income: 0,
+            liability: 0,
+          },
+        };
   const combinedDataError = [
-    dataError,
+    financialData.dataError,
     memberInvestmentsResult.error?.message,
     memberChargesResult.error?.message,
   ]
     .filter(Boolean)
     .join(" ");
+
+  return {
+    ...financialData,
+    combinedDataError,
+    memberCharges,
+    myInvestmentTotal,
+  };
+}
+
+export default function PortalFinancialsPage() {
+  const { data, error, isLoading } = useStaticPageData(loadPortalFinancialsPage);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading financial records…" />;
+  if (!data) return <StaticPageError>{error ?? "Financial records are unavailable."}</StaticPageError>;
+
+  const {
+    accountRows,
+    collectionsThisMonth,
+    combinedDataError,
+    donationTotal,
+    memberCharges,
+    memberExposureRows,
+    myInvestmentTotal,
+    totalsByType,
+  } = data;
+  const pendingByCategory = (category: MemberChargeRecord["charge_category"]) =>
+    memberCharges
+      .filter((charge) => charge.status === "pending" && charge.charge_category === category)
+      .reduce((total, charge) => total + parseMoney(charge.amount), 0);
+  const totalShares = memberExposureRows.reduce((total, row) => total + row.shares, 0);
+  const totalSavings = memberExposureRows.reduce((total, row) => total + row.savings, 0);
+  const totalLoans = memberExposureRows.reduce((total, row) => total + row.loans, 0);
+
+  async function downloadRecords() {
+    setIsDownloading(true);
+
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(accountRows),
+        "Ledger",
+      );
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(memberExposureRows),
+        "Member balances",
+      );
+      XLSX.writeFile(workbook, `cooperative-financial-records-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } finally {
+      setIsDownloading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -89,10 +162,14 @@ export default async function PortalFinancialsPage() {
             </p>
           </div>
 
-          <Button asChild className="w-full lg:w-auto" variant="secondary">
-            <a href="/api/portal/reports/financial-records">
-              Download records
-            </a>
+          <Button
+            className="w-full lg:w-auto"
+            disabled={isDownloading}
+            onClick={() => void downloadRecords()}
+            variant="secondary"
+          >
+            {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Download records
           </Button>
         </div>
       </section>

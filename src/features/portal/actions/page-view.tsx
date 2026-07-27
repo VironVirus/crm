@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -95,7 +97,7 @@ export default function PortalActionsPageView({
     setIsGeneratingStatement(true);
 
     try {
-      const response = await fetch("/api/portal/reports/member-statement");
+      const response = await staticApiFetch("/api/portal/reports/member-statement");
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as
@@ -111,7 +113,7 @@ export default function PortalActionsPageView({
         response.headers
           .get("content-disposition")
           ?.match(/filename=\"([^\"]+)\"/)?.[1] ??
-        `ifemelunma-member-statement-${new Date().toISOString().slice(0, 10)}.pdf`;
+        `ifemelunma-member-statement-${new Date().toISOString().slice(0, 10)}.csv`;
 
       downloadBlob(await response.blob(), filename);
     } catch (error) {
@@ -210,7 +212,7 @@ export default function PortalActionsPageView({
               )}
             </Button>
           }
-          description="Download your member statement as a PDF."
+          description="Download your member statement as a CSV file."
           icon={Download}
           title="Statements"
         />

@@ -1,19 +1,16 @@
 import {
   PHASE_DEVELOPMENT_SERVER,
   PHASE_PRODUCTION_BUILD,
-  PHASE_PRODUCTION_SERVER,
 } from "next/constants.js";
 
 const REQUIRED_PRODUCTION_ENVIRONMENT_VARIABLES = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
 ];
 
 function validateProductionEnvironment(phase) {
   if (
-    phase !== PHASE_PRODUCTION_BUILD &&
-    phase !== PHASE_PRODUCTION_SERVER
+    phase !== PHASE_PRODUCTION_BUILD
   ) {
     return;
   }
@@ -42,6 +39,11 @@ const nextConfig = (phase) => {
   validateProductionEnvironment(phase);
 
   return {
+    images: {
+      unoptimized: true,
+    },
+    output: "export",
+    trailingSlash: true,
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
   };
 };

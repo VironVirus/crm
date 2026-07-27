@@ -1,7 +1,14 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminGovernancePageView from "@/features/admin/governance/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { parseMoney } from "@/lib/loans";
-import { syncMeetingState } from "@/lib/meetings/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type MeetingRecord = {
   absence_fee: number | string | null;
@@ -42,10 +49,9 @@ type ProfileRecord = {
   member_number: string | null;
 };
 
-export default async function AdminGovernancePage() {
-  const admin = createSupabaseAdminClient();
-  await syncMeetingState(admin);
-
+async function loadAdminGovernancePage(
+  admin: SupabaseClient,
+): Promise<ComponentProps<typeof AdminGovernancePageView>> {
   const [meetingsResult, attendanceResult, chargesResult, profilesResult] =
     await Promise.all([
       admin
@@ -243,11 +249,18 @@ export default async function AdminGovernancePage() {
     profilesResult.error?.message,
   ].filter(Boolean);
 
-  return (
-    <AdminGovernancePageView
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      rows={rows}
-      totals={totals}
-    />
-  );
+  return {
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    rows,
+    totals,
+  };
+}
+
+export default function AdminGovernancePage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminGovernancePage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading meetings…" />;
+  if (!data) return <StaticPageError>{error ?? "Meeting records are unavailable."}</StaticPageError>;
+
+  return <AdminGovernancePageView {...data} dataError={data.dataError ?? error} />;
 }

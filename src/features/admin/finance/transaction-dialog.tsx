@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Search, Wallet } from "lucide-react";
@@ -170,7 +172,7 @@ export function SavingsTransactionDialog({
       }
     }
 
-    const response = await fetch("/api/admin/savings/transactions", {
+    const response = await staticApiFetch("/api/admin/savings/transactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

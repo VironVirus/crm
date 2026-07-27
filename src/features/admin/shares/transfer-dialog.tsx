@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -102,7 +104,7 @@ export function ShareTransferDialog({
       return;
     }
 
-    const response = await fetch("/api/admin/shares/transfers", {
+    const response = await staticApiFetch("/api/admin/shares/transfers", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

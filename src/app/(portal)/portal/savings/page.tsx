@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import MemberSavingsPageView from "@/features/portal/savings/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import {
   buildSavingsGrowthSeries,
   parseSupabaseNumeric,
@@ -7,7 +15,6 @@ import {
   type SavingsAccountOption,
   type SavingsTransactionRow,
 } from "@/lib/savings";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
   full_name: string;
@@ -36,16 +43,10 @@ type SavingsTransactionRecord = {
   created_by: string;
 };
 
-export default async function PortalSavingsPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/portal/savings");
-  }
-
+async function loadPortalSavingsPage(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<ComponentProps<typeof MemberSavingsPageView>> {
   const [profileResult, accountsResult] = await Promise.all([
     supabase
       .from("profiles")
@@ -119,14 +120,21 @@ export default async function PortalSavingsPage() {
     transactionsError,
   ].filter(Boolean);
 
-  return (
-    <MemberSavingsPageView
-      accounts={accounts}
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      growthSeries={buildSavingsGrowthSeries(accounts, transactions)}
-      memberName={profile?.full_name ?? user.email ?? "Member"}
-      memberNumber={profile?.member_number ?? null}
-      transactions={transactions}
-    />
-  );
+  return {
+    accounts,
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    growthSeries: buildSavingsGrowthSeries(accounts, transactions),
+    memberName: profile?.full_name ?? user.email ?? "Member",
+    memberNumber: profile?.member_number ?? null,
+    transactions,
+  };
+}
+
+export default function PortalSavingsPage() {
+  const { data, error, isLoading } = useStaticPageData(loadPortalSavingsPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading your savings…" />;
+  if (!data) return <StaticPageError>{error ?? "Your savings are unavailable."}</StaticPageError>;
+
+  return <MemberSavingsPageView {...data} dataError={data.dataError ?? error} />;
 }

@@ -1,6 +1,4 @@
-import "server-only";
-
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   type LoanBookRow,
   type LoanBookStatus,
@@ -276,8 +274,7 @@ function buildMonthCollectionSeries({
   });
 }
 
-export async function getReportsPageData() {
-  const admin = createSupabaseAdminClient();
+export async function getReportsPageData(admin: SupabaseClient) {
   const { startDate: collectionStartDate, monthKeys } = getCollectionWindow();
 
   const [
@@ -530,15 +527,16 @@ export async function getReportsPageData() {
 }
 
 export async function getMemberStatementData({
+  admin,
   endDate,
   memberId,
   startDate,
 }: {
+  admin: SupabaseClient;
   endDate: string;
   memberId: string;
   startDate: string;
 }) {
-  const admin = createSupabaseAdminClient();
   const startTimestamp = `${startDate}T00:00:00.000Z`;
   const endTimestamp = `${endDate}T23:59:59.999Z`;
 

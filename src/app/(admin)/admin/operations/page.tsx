@@ -1,4 +1,13 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminOperationsPageView from "@/features/admin/operations/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import {
   formatCooperativeMonth,
   getCurrentMonthStart,
@@ -10,9 +19,7 @@ import {
   type MemberInvestmentSummary,
   type OccasionLevySummary,
 } from "@/lib/cooperative-finance";
-import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
 import { parseMoney } from "@/lib/loans";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type ProfileRecord = {
   full_name: string;
@@ -62,10 +69,10 @@ type OccasionLevyRecord = {
   title: string;
 };
 
-export default async function AdminOperationsPage() {
-  const admin = createSupabaseAdminClient();
+async function loadAdminOperationsPage(
+  admin: SupabaseClient,
+): Promise<ComponentProps<typeof AdminOperationsPageView>> {
   const currentMonthStart = getCurrentMonthStart();
-  const duesGenerationError = await ensureCurrentMonthlyDues(admin);
   const [profilesResult, plansResult, investmentsResult, leviesResult, chargesResult] =
     await Promise.all([
       admin
@@ -202,7 +209,6 @@ export default async function AdminOperationsPage() {
     title: levy.title,
   }));
   const errors = [
-    duesGenerationError,
     profilesResult.error?.message,
     plansResult.error?.message,
     investmentsResult.error?.message,
@@ -210,16 +216,23 @@ export default async function AdminOperationsPage() {
     chargesResult.error?.message,
   ].filter(Boolean);
 
-  return (
-    <AdminOperationsPageView
-      charges={charges}
-      currentMonthLabel={formatCooperativeMonth(currentMonthStart)}
-      currentMonthStart={currentMonthStart}
-      dataError={errors.join(" ") || null}
-      investments={investments}
-      levies={levies}
-      members={members}
-      plans={plans}
-    />
-  );
+  return {
+    charges,
+    currentMonthLabel: formatCooperativeMonth(currentMonthStart),
+    currentMonthStart,
+    dataError: errors.join(" ") || null,
+    investments,
+    levies,
+    members,
+    plans,
+  };
+}
+
+export default function AdminOperationsPage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminOperationsPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading cooperative operations…" />;
+  if (!data) return <StaticPageError>{error ?? "Operations are unavailable."}</StaticPageError>;
+
+  return <AdminOperationsPageView {...data} dataError={data.dataError ?? error} />;
 }

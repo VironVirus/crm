@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useMemo, useState } from "react";
 import {
   Bar,
@@ -154,7 +156,7 @@ export default function AdminReportsPageView({
   const handleStatementDownload = async () => {
     if (!selectedMemberId) {
       setActionState({
-        message: "Choose a member before generating the statement PDF.",
+        message: "Choose a member before generating the statement.",
         tone: "error",
       });
       return;
@@ -177,7 +179,7 @@ export default function AdminReportsPageView({
         member_id: selectedMemberId,
         start_date: startDate,
       });
-      const response = await fetch(
+      const response = await staticApiFetch(
         `/api/admin/reports/member-statement?${query.toString()}`,
         {
           method: "GET",
@@ -199,7 +201,7 @@ export default function AdminReportsPageView({
         response.headers
           .get("content-disposition")
           ?.match(/filename="([^"]+)"/)?.[1] ??
-        `ifemelunma-member-statement-${getReportStamp()}.pdf`;
+        `ifemelunma-member-statement-${getReportStamp()}.csv`;
       const blob = await response.blob();
 
       downloadBlob(blob, filename);
@@ -332,7 +334,7 @@ export default function AdminReportsPageView({
               Generate financial and member reports without leaving the dashboard
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-slate-300">
-              Produce member-ready PDF statements, export the loan book and trial
+              Produce member-ready CSV statements, export the loan book and trial
               balance to Excel, and monitor monthly collections across savings,
               loan repayments, and share purchases.
             </p>
@@ -373,7 +375,7 @@ export default function AdminReportsPageView({
       {rangeInvalid ? (
         <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
           The member statement start date is later than the end date. Adjust
-          the range before generating the PDF.
+          the range before generating the statement.
         </div>
       ) : null}
 
@@ -381,7 +383,7 @@ export default function AdminReportsPageView({
         <Card className="bg-white/[0.06]">
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
-              <Badge className="w-fit">PDF</Badge>
+              <Badge className="w-fit">CSV</Badge>
               <FileText className="h-5 w-5 text-emerald-200" />
             </div>
             <CardTitle className="font-['Outfit'] text-2xl">
@@ -399,7 +401,7 @@ export default function AdminReportsPageView({
               onClick={handleStatementDownload}
             >
               <FileText className="mr-2 h-4 w-4" />
-              {isGeneratingStatement ? "Preparing PDF..." : "Generate PDF"}
+              {isGeneratingStatement ? "Preparing statement..." : "Generate CSV"}
             </Button>
           </CardContent>
         </Card>
@@ -500,7 +502,7 @@ export default function AdminReportsPageView({
               Configure the statement period
             </CardTitle>
             <CardDescription>
-              Choose a member and date range, then download a ready-to-share PDF
+              Choose a member and date range, then download a portable CSV
               statement.
             </CardDescription>
           </CardHeader>
@@ -578,7 +580,7 @@ export default function AdminReportsPageView({
               onClick={handleStatementDownload}
             >
               <FileText className="mr-2 h-4 w-4" />
-              {isGeneratingStatement ? "Preparing PDF..." : "Download Member Statement"}
+              {isGeneratingStatement ? "Preparing statement..." : "Download Member Statement"}
             </Button>
           </CardContent>
         </Card>

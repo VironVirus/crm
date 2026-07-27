@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -125,7 +127,7 @@ function LoanProductDialog({
   const submit = handleSubmit(async (values) => {
     setServerError(null);
 
-    const response = await fetch(
+    const response = await staticApiFetch(
       product ? `/api/admin/loan-products/${product.id}` : "/api/admin/loan-products",
       {
         body: JSON.stringify(values),
@@ -399,7 +401,7 @@ export default function AdminSettingsPageView({
   const saveShareConfig = handleSubmit(async (values) => {
     setShareConfigError(null);
 
-    const response = await fetch("/api/admin/share-config", {
+    const response = await staticApiFetch("/api/admin/share-config", {
       body: JSON.stringify(values),
       headers: {
         "Content-Type": "application/json",
@@ -629,7 +631,7 @@ export default function AdminSettingsPageView({
         <Card>
           <CardHeader>
             <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-              Recommended environment variables
+              Supabase Edge Function secrets
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">

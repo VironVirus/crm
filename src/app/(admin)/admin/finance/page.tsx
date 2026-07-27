@@ -1,4 +1,13 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminSavingsPageView from "@/features/admin/finance/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import {
   parseSupabaseNumeric,
   sortSavingsAccountsByType,
@@ -6,7 +15,6 @@ import {
   type SavingsAccountRow,
   type SavingsMemberOption,
 } from "@/lib/savings";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
   id: string;
@@ -31,9 +39,9 @@ type SavingsAccountRecord = {
   created_at: string;
 };
 
-export default async function AdminFinancePage() {
-  const supabase = await createServerSupabaseClient();
-
+async function loadAdminFinancePage(
+  supabase: SupabaseClient,
+): Promise<ComponentProps<typeof AdminSavingsPageView>> {
   const [membersResult, profilesResult, accountsResult] = await Promise.all([
     supabase.from("members").select("id"),
     supabase
@@ -121,11 +129,18 @@ export default async function AdminFinancePage() {
     .filter((member): member is SavingsMemberOption => Boolean(member))
     .sort((left, right) => left.fullName.localeCompare(right.fullName));
 
-  return (
-    <AdminSavingsPageView
-      accounts={accounts}
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      members={members}
-    />
-  );
+  return {
+    accounts,
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    members,
+  };
+}
+
+export default function AdminFinancePage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminFinancePage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading savings records…" />;
+  if (!data) return <StaticPageError>{error ?? "Savings records are unavailable."}</StaticPageError>;
+
+  return <AdminSavingsPageView {...data} dataError={data.dataError ?? error} />;
 }

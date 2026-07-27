@@ -52,7 +52,17 @@ This setup includes:
 - Creates occasion levies for all active members or one selected member
 - Supports per-meeting late and absence penalties
 
-Optional edge function:
+Production Edge Functions:
+
+- `functions/cooperative-api`
+  Authenticates browser requests and handles all privileged cooperative writes
+  for the static Hostinger deployment. Deploy with `--no-verify-jwt`; the
+  public registration preflight is unauthenticated and every protected route
+  validates its bearer token and role inside the function.
+- `functions/flutterwave-webhook`
+  Verifies Flutterwave signatures and transactions, then posts idempotent
+  savings, loan, or share payments. Deploy with `--no-verify-jwt` because
+  Flutterwave is not a Supabase user.
 
 - `functions/generate-member-number`
   This repo includes an Edge Function version of the member-number generator,
@@ -66,3 +76,7 @@ Optional edge function:
   This Edge Function validates guarantor eligibility, inserts the
   `loan_guarantors` row, and sends optional SMS/email notifications through
   Africa's Talking and Resend when the required secrets are configured.
+
+Keep `SUPABASE_SERVICE_ROLE_KEY`, `FLUTTERWAVE_SECRET_KEY`, and
+`FLUTTERWAVE_SECRET_HASH` in Supabase Edge Function secrets. They must never be
+added to Hostinger's static build environment.

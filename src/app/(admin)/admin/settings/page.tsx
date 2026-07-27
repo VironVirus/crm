@@ -1,8 +1,16 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminSettingsPageView from "@/features/admin/settings/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { getRequiredEnvironmentVariables } from "@/lib/env/requirements";
 import { parseMoney, type LoanInterestType, type LoanProductOption } from "@/lib/loans";
 import { parseSupabaseNumeric, type ShareConfig } from "@/lib/shares";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type LoanProductRecord = {
   description: string | null;
@@ -28,8 +36,9 @@ type ShareConfigRecord = {
   share_value: number | string | null;
 };
 
-export default async function AdminSettingsPage() {
-  const admin = createSupabaseAdminClient();
+async function loadAdminSettingsPage(
+  admin: SupabaseClient,
+): Promise<ComponentProps<typeof AdminSettingsPageView>> {
   const requirements = getRequiredEnvironmentVariables();
   const [loanProductsResult, shareConfigResult] = await Promise.all([
     admin
@@ -77,12 +86,19 @@ export default async function AdminSettingsPage() {
       } satisfies ShareConfig)
     : null;
 
-  return (
-    <AdminSettingsPageView
-      loanProducts={loanProducts}
-      recommended={requirements.recommended}
-      required={requirements.required}
-      shareConfig={shareConfig}
-    />
-  );
+  return {
+    loanProducts,
+    recommended: requirements.recommended,
+    required: requirements.required,
+    shareConfig,
+  };
+}
+
+export default function AdminSettingsPage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminSettingsPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading cooperative settings…" />;
+  if (!data) return <StaticPageError>{error ?? "Settings are unavailable."}</StaticPageError>;
+
+  return <AdminSettingsPageView {...data} />;
 }

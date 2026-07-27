@@ -4,6 +4,7 @@ import { COOPERATIVE_NAME } from "@/lib/brand";
 import { getPortalFinancialRecordsData } from "@/lib/financials";
 import { getTransactionDateStamp } from "@/lib/transaction-references";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,9 @@ export async function GET() {
     return jsonError("You need to sign in before downloading financial records.", 401);
   }
 
-  const financialData = await getPortalFinancialRecordsData();
+  const financialData = await getPortalFinancialRecordsData(
+    createSupabaseAdminClient(),
+  );
 
   if (financialData.dataError) {
     return jsonError(

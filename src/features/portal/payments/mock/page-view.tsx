@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -38,7 +40,7 @@ export default function MockPaymentPageView({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/payments/mock/complete", {
+      const response = await staticApiFetch("/api/payments/mock/complete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

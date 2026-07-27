@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -78,7 +80,7 @@ export function DividendDeclarationDialog({
   }, [totalProfit, totalSharesOutstanding]);
 
   const onSubmit = handleSubmit(async (values) => {
-    const response = await fetch("/api/admin/shares/dividends", {
+    const response = await staticApiFetch("/api/admin/shares/dividends", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,11 +1,15 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import PortalGovernancePageView from "@/features/portal/governance/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { getMemberTier } from "@/lib/member-tier";
 import { parseMoney } from "@/lib/loans";
-import { syncMeetingState } from "@/lib/meetings/server";
-import { ensureMemberRecord } from "@/lib/members";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type MemberRecord = {
   national_id_path: string | null;
@@ -48,19 +52,10 @@ type ChargeRecord = {
   status: "paid" | "pending" | "waived";
 };
 
-export default async function PortalGovernancePage() {
-  const supabase = await createServerSupabaseClient();
-  const admin = createSupabaseAdminClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/portal/governance");
-  }
-
-  await syncMeetingState(admin);
-
+async function loadPortalGovernancePage(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<ComponentProps<typeof PortalGovernancePageView>> {
   const profileResult = await supabase
     .from("profiles")
     .select("member_number")
@@ -68,16 +63,17 @@ export default async function PortalGovernancePage() {
     .maybeSingle();
   const profile = profileResult.data as ProfileRecord | null;
 
-  const ensuredMemberResult = await ensureMemberRecord(admin, {
-    memberId: user.id,
-    memberNumber: profile?.member_number ?? null,
-    select:
+  const memberResult = await supabase
+    .from("members")
+    .select(
       "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-  });
-  const member = ensuredMemberResult.data as MemberRecord | null;
+    )
+    .eq("id", user.id)
+    .maybeSingle();
+  const member = memberResult.data as MemberRecord | null;
 
   const [meetingsResult, attendanceResult, chargesResult] = await Promise.all([
-    admin
+    supabase
       .from("meetings")
       .select(
         "id, title, agenda, location, starts_at, lateness_starts_at, attendance_closes_at, reminder_message, late_fee, absence_fee, status",
@@ -147,19 +143,26 @@ export default async function PortalGovernancePage() {
 
   const errors = [
     profileResult.error?.message,
-    ensuredMemberResult.error?.message,
+    memberResult.error?.message,
     meetingsResult.error?.message,
     attendanceResult.error?.message,
     chargesResult.error?.message,
   ].filter(Boolean);
 
-  return (
-    <PortalGovernancePageView
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      meetings={meetings}
-      memberTier={getMemberTier(member)}
-      pendingChargesAmount={pendingChargesAmount}
-      pendingChargesCount={pendingChargesCount}
-    />
-  );
+  return {
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    meetings,
+    memberTier: getMemberTier(member),
+    pendingChargesAmount,
+    pendingChargesCount,
+  };
+}
+
+export default function PortalGovernancePage() {
+  const { data, error, isLoading } = useStaticPageData(loadPortalGovernancePage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading meetings…" />;
+  if (!data) return <StaticPageError>{error ?? "Meeting records are unavailable."}</StaticPageError>;
+
+  return <PortalGovernancePageView {...data} dataError={data.dataError ?? error} />;
 }

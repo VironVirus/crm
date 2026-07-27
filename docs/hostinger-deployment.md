@@ -1,158 +1,167 @@
-# Hostinger deployment
+# Hostinger static deployment
 
-This application must be deployed as a **Node.js / Next.js web app**. Do not
-upload it as a static site: the authenticated pages, API routes, payment
-webhook, and server-side Supabase access require a running Node.js process.
+The production website is a Next.js static export. Hostinger serves the files
+from `out/`; authentication, protected writes, scheduled dues, payments, and
+webhooks run in Supabase. There is no `next start`, PM2, Passenger, reverse
+proxy, `.htaccess` Node rewrite, or persistent Hostinger Node process.
 
-## Hosting requirements
-
-- Hostinger Business Web Hosting, a supported Cloud plan, or a VPS
-- Node.js 22.x
-- pnpm
-- A Supabase project
-- A public HTTPS domain
-
-The managed Node.js Web App flow is the simplest option. A VPS also works, but
-requires you to manage the process manager, reverse proxy, SSL, updates, and
-backups yourself.
+This architecture avoids the 403 caused by Hostinger's Node proxy not binding
+to the domain and keeps Hostinger process usage at the minimum possible level.
 
 ## 1. Prepare Supabase
 
 For a new Supabase project:
 
-1. Open the Supabase SQL Editor.
+1. Open **Supabase -> SQL Editor**.
 2. Run `supabase/sql/full_schema_setup.sql` once.
-3. Follow `docs/supabase-email-otp-setup.md` to configure email OTP login.
-4. Create a normal user through the app, then use
-   `supabase/sql/promote_user_to_admin.sql` to promote the intended first admin.
-5. Deploy the Edge Functions required by the enabled features:
-   - `send-notification`
-   - `send-contribution-due-reminders`
-   - `calculate-dividends`
-   - `invite-guarantor`
-   - `generate-repayment-schedule`
-   - `generate-member-number` is optional because the app can use the database
-     RPC directly.
-6. Configure the Edge Function secrets listed in `.env.example` and
-   `supabase/README.md`.
+3. Configure email OTP using `docs/supabase-email-otp-setup.md`.
+4. Register the first user, then run
+   `supabase/sql/promote_user_to_admin.sql` for that user.
 
-For an existing production database, back it up and run these files in the SQL
-Editor instead of re-running the full schema:
+For an existing project, back it up and run these idempotent patches:
 
 1. `supabase/sql/production_hardening_post_schema_patch.sql`
 2. `supabase/sql/cooperative_financial_features_patch.sql`
 
-Both are idempotent, so a deployment retry does not duplicate monthly dues,
-levies, or investment records.
+The financial patch installs the fixed ₦10,000 monthly dues job plus the
+investment, occasion levy, and meeting-penalty tables and policies.
 
-## 2. Create the Hostinger app
+## 2. Deploy Supabase functions
 
-In hPanel:
+Install the Supabase CLI locally, sign in, and link the project. Replace the
+example project reference with the reference from **Supabase -> Project
+Settings -> General**.
 
-1. Go to **Websites -> Add website -> Node.js Web App**.
-2. Choose **Import Git Repository** and connect this repository.
-3. Use these settings if Hostinger does not detect them automatically:
-
-   | Setting | Value |
-   | --- | --- |
-   | Framework | Next.js |
-   | Node.js version | 22.x |
-   | Package manager | pnpm |
-   | Install command | `pnpm install --frozen-lockfile` |
-   | Build command | `pnpm build` |
-   | Start command | `pnpm start` |
-   | Build output | `.next` |
-
-Do not set a custom entry file when the **Next.js** framework preset is active.
-The `start` script reads Hostinger's assigned `PORT` automatically.
-The repository pins pnpm 10 in `package.json`; keep that version in hPanel so
-local installs and Hostinger deployments use the same lockfile format.
-
-## 3. Add environment variables
-
-Add these in hPanel before the first build. Values must not be committed to
-Git.
-
-Required for the app to start:
-
-```text
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase functions deploy cooperative-api --no-verify-jwt
+supabase functions deploy flutterwave-webhook --no-verify-jwt
+supabase functions deploy calculate-dividends
+supabase functions deploy generate-repayment-schedule
+supabase functions deploy invite-guarantor
+supabase functions deploy send-notification
+supabase functions deploy send-contribution-due-reminders
 ```
 
-Required for correct production links and callbacks:
+`cooperative-api` uses `--no-verify-jwt` because registration availability is
+public. The function validates the Supabase bearer token itself on every
+protected route and checks the user's role before privileged writes.
 
-```text
-APP_URL=https://your-domain.example
+Add secrets in **Supabase -> Edge Functions -> Secrets** or with the CLI:
+
+```bash
+supabase secrets set APP_URL=https://impcs.consolish.com
+supabase secrets set FLUTTERWAVE_SECRET_KEY=YOUR_SECRET_KEY
+supabase secrets set FLUTTERWAVE_SECRET_HASH=YOUR_SECRET_HASH
 ```
 
-Add the Flutterwave variables before enabling real payments:
+Add the Africa's Talking and Resend values from `.env.example` only if those
+delivery channels are enabled. `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` are provided to deployed Supabase functions. Never
+copy the service-role key into Hostinger or browser code.
+
+## 3. Configure Supabase Auth
+
+In **Supabase -> Authentication -> URL Configuration**:
+
+- Site URL: `https://impcs.consolish.com`
+- Redirect URL: `https://impcs.consolish.com/**`
+
+Use the permanent custom domain here. Do not add Hostinger's temporary preview
+or deployment URL; those URLs can change after every deployment.
+
+## 4. Configure Flutterwave
+
+Set the webhook URL in Flutterwave to:
 
 ```text
-FLUTTERWAVE_MOCK_MODE=false
-FLUTTERWAVE_PUBLIC_KEY=...
-FLUTTERWAVE_SECRET_KEY=...
-FLUTTERWAVE_SECRET_HASH=...
-FLUTTERWAVE_BASE_URL=https://api.flutterwave.com
+https://YOUR_PROJECT_REF.supabase.co/functions/v1/flutterwave-webhook
 ```
 
-Use `FLUTTERWAVE_MOCK_MODE=true` only for a non-production test environment.
-Africa's Talking and Resend values are also needed if SMS and app-generated
-email notifications are enabled; see `.env.example` for the full list.
+Set Flutterwave's secret hash to the same value stored as
+`FLUTTERWAVE_SECRET_HASH` in Supabase. The webhook is not hosted on the
+Hostinger domain anymore.
 
-`NEXT_PUBLIC_*` values are embedded during `pnpm build`. If either public
-Supabase value changes, update it in hPanel and redeploy rather than only
-restarting the app.
+## 5. Create the Hostinger static deployment
 
-## 4. Configure external service URLs
+Remove or disconnect the old Node.js application entry for this domain. Then
+create a static Git deployment for `impcs.consolish.com` with these values:
 
-After the Hostinger domain is live:
+| Setting | Value |
+| --- | --- |
+| Framework | Next.js / Static |
+| Node.js version used to build | 22.x |
+| Install command | `npm install` |
+| Build command | `npm run build` |
+| Output directory | `out` or `out/` |
+| Start command | none |
+| Application root | repository root |
 
-1. In Supabase Auth URL Configuration, set the Site URL to `APP_URL` and add
-   any required redirect URLs.
-2. In Flutterwave, set the webhook URL to:
-   `https://your-domain.example/api/payments/webhook`
-3. Ensure the Flutterwave secret hash exactly matches
-   `FLUTTERWAVE_SECRET_HASH` in Hostinger.
-4. Verify the sender domain/address used by `RESEND_FROM_EMAIL` before enabling
-   production email delivery.
+Add only these build variables in Hostinger:
 
-## 5. Deploy and verify
+```text
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+```
 
-Deploy from hPanel, then check:
+Do not add `SUPABASE_SERVICE_ROLE_KEY`, Flutterwave secrets, Resend secrets, or
+SMS keys to Hostinger.
 
-1. `https://your-domain.example/api/health` returns JSON with `"status":"ok"`.
-2. Registration sends a Supabase email OTP and completes successfully.
-3. Login redirects a member to `/portal` and an admin to `/admin`.
-4. KYC uploads work in the private `member-kyc` bucket.
-5. A payment can be initiated and its webhook is accepted exactly once.
-6. Admin savings, loan, share, meeting, cooperative finance, and report
-   operations load without authorization or database errors.
-7. `/admin/operations` can sync the current month's ₦10,000 dues, create an
-   investment plan, record a member investment, and assign an occasion levy.
-8. Member `/portal` and `/portal/financials` pages show their dues,
-   investments, levies, and attendance penalties.
-9. Hostinger logs contain no missing-environment-variable messages.
+If hPanel cannot publish the Git build output directly, run `npm run build`
+locally and upload the **contents inside `out/`** to `public_html/`. The final
+layout must look like this:
+
+```text
+public_html/
+  index.html
+  login/index.html
+  portal/index.html
+  admin/index.html
+  _next/
+```
+
+It must not look like `public_html/out/index.html`. Remove old manual
+`.htaccess` rules that rewrite traffic to `/nodejs/`; static folders and their
+`index.html` files do not need that proxy.
+
+## 6. Verify
+
+After deployment, test these URLs in a private browser window:
+
+1. `https://impcs.consolish.com/`
+2. `https://impcs.consolish.com/login/`
+3. `https://impcs.consolish.com/register/`
+4. `https://YOUR_PROJECT_REF.supabase.co/functions/v1/cooperative-api/health`
+
+Then verify:
+
+1. Registration and OTP login complete successfully.
+2. Admin and member accounts open their correct dashboards.
+3. `/admin/operations/` can generate ₦10,000 dues, create an investment plan,
+   record a member investment, and add an occasion levy.
+4. Member dashboards show dues, investments, levies, and attendance penalties.
+5. KYC uploads, savings, shares, loans, meetings, and report downloads work.
+6. A Flutterwave test payment is processed once by the Supabase webhook.
+
+## Troubleshooting
+
+- **403 at the domain root:** the domain is still bound to the old Node app, or
+  `index.html` is not directly inside the configured output directory.
+- **Hostinger preview URL keeps changing:** normal for deployments; use only
+  `https://impcs.consolish.com` in Supabase and provider settings.
+- **Blank page or Supabase errors:** confirm both `NEXT_PUBLIC_*` variables were
+  present during the build, then rebuild.
+- **Actions return 404:** deploy `cooperative-api` and confirm the Supabase
+  project URL in Hostinger matches that function's project.
+- **Payment starts but does not post:** check the `flutterwave-webhook` logs and
+  confirm both Flutterwave secrets and the webhook URL.
+- **High process count:** confirm there is no Hostinger start command and no
+  Node.js application attached to the domain. Static hosting needs no app
+  process.
 
 ## Rollback
 
-Use Hostinger's deployment history to redeploy the last known-good Git commit.
-Database migrations and one-off SQL changes are not rolled back with the web
-app, so back up the Supabase database before applying production schema changes.
-
-## VPS alternative
-
-On a Hostinger VPS, clone the repository, install Node.js 22 and pnpm, add the
-environment variables through a protected service configuration, then run:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-pnpm start
-```
-
-Run the start command under a process manager such as PM2 or systemd, and put
-NGINX in front of the assigned local port with HTTPS enabled. Keep `.env*`, the
-Supabase service role key, and provider secrets out of the web root and source
-control.
+Redeploy the last known-good Git commit or re-upload its `out/` contents.
+Hostinger rollback does not reverse Supabase schema changes, so back up the
+database before applying schema files.

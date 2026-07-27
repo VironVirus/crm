@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   activateProtectedSession,
   clearProtectedSession,
@@ -18,12 +18,11 @@ export function ProtectedSessionGuard({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isReady, setIsReady] = useState(false);
   const logoutStartedRef = useRef(false);
 
   useEffect(() => {
-    const currentPath = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+    const currentPath = `${pathname}${window.location.search}`;
 
     async function forceReauthentication() {
       if (logoutStartedRef.current) {
@@ -84,7 +83,7 @@ export function ProtectedSessionGuard({
       window.removeEventListener("touchstart", trackActivity);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [pathname, router, searchParams]);
+  }, [pathname, router]);
 
   if (!isReady) {
     return <div className="min-h-[40vh]" />;

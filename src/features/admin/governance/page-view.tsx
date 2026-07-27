@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useMemo, useState, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -239,7 +241,7 @@ function MeetingFormDialog({
   const submit = handleSubmit(async (values) => {
     setServerError(null);
 
-    const response = await fetch(
+    const response = await staticApiFetch(
       meeting ? `/api/admin/meetings/${meeting.id}` : "/api/admin/meetings",
       {
         body: JSON.stringify({
@@ -495,7 +497,7 @@ function MeetingActionButton({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/admin/meetings/${meetingId}`, {
+      const response = await staticApiFetch(`/api/admin/meetings/${meetingId}`, {
         body: JSON.stringify({ action }),
         headers: {
           "Content-Type": "application/json",
@@ -566,7 +568,7 @@ function AttendanceApprovalButton({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
+      const response = await staticApiFetch(
         `/api/admin/meetings/${meetingId}/attendance/${attendanceId}`,
         {
           body: JSON.stringify({ isApproved: true }),
@@ -937,7 +939,7 @@ export default function AdminGovernancePageView({
     setIsSendingReminders(true);
 
     try {
-      const response = await fetch("/api/admin/meetings/reminders", {
+      const response = await staticApiFetch("/api/admin/meetings/reminders", {
         method: "POST",
       });
       const payload = (await response.json().catch(() => null)) as

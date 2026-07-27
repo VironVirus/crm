@@ -1,4 +1,13 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminSharesPageView from "@/features/admin/shares/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import {
   parseSupabaseNumeric,
   type DividendDeclarationRow,
@@ -6,7 +15,6 @@ import {
   type ShareMemberOption,
   type ShareRegisterRow,
 } from "@/lib/shares";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type ProfileRecord = {
   id: string;
@@ -48,9 +56,9 @@ type DividendPaymentRecord = {
   dividend_declaration_id: string;
 };
 
-export default async function AdminSharesPage() {
-  const admin = createSupabaseAdminClient();
-
+async function loadAdminSharesPage(
+  admin: SupabaseClient,
+): Promise<ComponentProps<typeof AdminSharesPageView>> {
   const [
     membersResult,
     profilesResult,
@@ -170,13 +178,20 @@ export default async function AdminSharesPage() {
       } satisfies ShareConfig)
     : null;
 
-  return (
-    <AdminSharesPageView
-      config={shareConfig}
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      declarations={declarations}
-      members={members}
-      register={register}
-    />
-  );
+  return {
+    config: shareConfig,
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    declarations,
+    members,
+    register,
+  };
+}
+
+export default function AdminSharesPage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminSharesPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading shareholding records…" />;
+  if (!data) return <StaticPageError>{error ?? "Share records are unavailable."}</StaticPageError>;
+
+  return <AdminSharesPageView {...data} dataError={data.dataError ?? error} />;
 }

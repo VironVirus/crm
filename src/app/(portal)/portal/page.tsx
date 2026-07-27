@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import MemberDashboardPageView from "@/features/portal/dashboard/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import {
   getCurrentMonthStart,
   type ChargeCategory,
@@ -8,10 +16,7 @@ import {
   type PortalInvestmentPosition,
   type PortalMonthlyDueSummary,
 } from "@/lib/cooperative-finance";
-import { ensureCurrentMonthlyDues } from "@/lib/cooperative-finance-server";
 import { getMemberTier } from "@/lib/member-tier";
-import { syncMeetingState } from "@/lib/meetings/server";
-import { ensureMemberRecord } from "@/lib/members";
 import {
   parseMoney,
   type LoanStatus,
@@ -29,8 +34,6 @@ import {
   type PortalDashboardRecentTransaction,
   type PortalDashboardShareSummary,
 } from "@/lib/portal-dashboard";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
   full_name: string;
@@ -174,20 +177,10 @@ function getLoanProductName({
   return product?.name ?? "Cooperative loan";
 }
 
-export default async function MemberDashboardPage() {
-  const supabase = await createServerSupabaseClient();
-  const admin = createSupabaseAdminClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/portal");
-  }
-
-  const duesGenerationError = await ensureCurrentMonthlyDues(admin);
-  await syncMeetingState(admin);
-
+async function loadMemberDashboardPage(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<ComponentProps<typeof MemberDashboardPageView>> {
   const [
     profileResult,
     savingsAccountsResult,
@@ -227,7 +220,7 @@ export default async function MemberDashboardPage() {
       .select("total_shares, total_value")
       .eq("member_id", user.id)
       .maybeSingle(),
-    admin
+    supabase
       .from("meetings")
       .select("id", { count: "exact", head: true })
       .eq("status", "scheduled"),
@@ -244,13 +237,14 @@ export default async function MemberDashboardPage() {
       .eq("member_id", user.id),
   ]);
   const profile = profileResult.data as ProfileRecord | null;
-  const ensuredMemberResult = await ensureMemberRecord(admin, {
-    memberId: user.id,
-    memberNumber: profile?.member_number ?? null,
-    select:
+  const memberResult = await supabase
+    .from("members")
+    .select(
       "next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-  });
-  const member = ensuredMemberResult.data as MemberRecord | null;
+    )
+    .eq("id", user.id)
+    .maybeSingle();
+  const member = memberResult.data as MemberRecord | null;
 
   const savingsAccounts =
     (savingsAccountsResult.data as SavingsAccountRecord[] | null) ?? [];
@@ -592,7 +586,7 @@ export default async function MemberDashboardPage() {
       };
   const errors = [
     profileResult.error?.message,
-    ensuredMemberResult.error?.message,
+    memberResult.error?.message,
     savingsAccountsResult.error?.message,
     loansResult.error?.message,
     guarantorRequestsResult.error?.message,
@@ -607,28 +601,34 @@ export default async function MemberDashboardPage() {
     pendingChargesResult.error?.message,
     memberInvestmentsResult.error?.message,
     investmentPlansResult.error?.message,
-    duesGenerationError,
   ].filter(Boolean);
 
-  return (
-    <MemberDashboardPageView
-      activeLoan={activeLoan}
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-      memberName={profile?.full_name ?? user.email ?? "Member"}
-      memberNumber={profile?.member_number ?? null}
-      memberTier={getMemberTier(member)}
-      investmentPositions={investmentPositions}
-      monthlyDue={monthlyDue}
-      openMeetingCount={openMeetingsCountResult.count ?? 0}
-      pendingChargeItems={pendingChargeItems}
-      pendingChargesAmount={pendingChargesAmount}
-      pendingChargesCount={pendingChargeItems.length}
-      pendingGuarantorCount={guarantorRequests.length}
-      recentTransactions={recentTransactions}
-      savingsBalance={savingsBalance}
-      savingsTrend={savingsTrend}
-      shares={shares}
-      totalInvestmentAmount={totalInvestmentAmount}
-    />
-  );
+  return {
+    activeLoan,
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+    memberName: profile?.full_name ?? user.email ?? "Member",
+    memberNumber: profile?.member_number ?? null,
+    memberTier: getMemberTier(member),
+    investmentPositions,
+    monthlyDue,
+    openMeetingCount: openMeetingsCountResult.count ?? 0,
+    pendingChargeItems,
+    pendingChargesAmount,
+    pendingChargesCount: pendingChargeItems.length,
+    pendingGuarantorCount: guarantorRequests.length,
+    recentTransactions,
+    savingsBalance,
+    savingsTrend,
+    shares,
+    totalInvestmentAmount,
+  };
+}
+
+export default function MemberDashboardPage() {
+  const { data, error, isLoading } = useStaticPageData(loadMemberDashboardPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading your dashboard…" />;
+  if (!data) return <StaticPageError>{error ?? "Your dashboard is unavailable."}</StaticPageError>;
+
+  return <MemberDashboardPageView {...data} dataError={data.dataError ?? error} />;
 }

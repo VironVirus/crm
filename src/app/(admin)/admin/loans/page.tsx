@@ -1,4 +1,13 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import AdminLoansPageView from "@/features/admin/loans/page-view";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import {
   LOAN_BOARD_STATUSES,
   parseMoney,
@@ -11,7 +20,6 @@ import {
   type LoanStatus,
 } from "@/lib/loans";
 import { KYC_STORAGE_BUCKET } from "@/lib/validation/member-registration";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { type SavingsAccountType } from "@/lib/savings";
 
 type ProfileRecord = {
@@ -103,7 +111,7 @@ type LoanGuarantorRecord = {
 
 async function createSignedDocumentLinks(
   member: MemberRecord,
-  admin = createSupabaseAdminClient(),
+  admin: SupabaseClient,
 ) {
   const documents = [
     { label: "National ID", path: member.national_id_path },
@@ -173,9 +181,9 @@ function mapLoanRecord(loan: LoanRecord): ExistingLoanSummary {
   };
 }
 
-export default async function AdminLoansPage() {
-  const admin = createSupabaseAdminClient();
-
+async function loadAdminLoansPage(
+  admin: SupabaseClient,
+): Promise<ComponentProps<typeof AdminLoansPageView>> {
   const [
     applicationsResult,
     loanProductsResult,
@@ -410,10 +418,17 @@ export default async function AdminLoansPage() {
     loanGuarantorsResult.error?.message,
   ].filter(Boolean);
 
-  return (
-    <AdminLoansPageView
-      applications={rows}
-      dataError={errors.length > 0 ? errors.join(" ") : null}
-    />
-  );
+  return {
+    applications: rows,
+    dataError: errors.length > 0 ? errors.join(" ") : null,
+  };
+}
+
+export default function AdminLoansPage() {
+  const { data, error, isLoading } = useStaticPageData(loadAdminLoansPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading loan applications…" />;
+  if (!data) return <StaticPageError>{error ?? "Loan applications are unavailable."}</StaticPageError>;
+
+  return <AdminLoansPageView {...data} dataError={data.dataError ?? error} />;
 }

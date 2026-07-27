@@ -1,17 +1,16 @@
+"use client";
+
 import { LoginForm } from "@/components/auth/login-form";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { internalRedirectPathSchema } from "@/lib/validation/auth";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{
-    next?: string;
-  }>;
-}) {
-  const resolvedSearchParams = await searchParams;
+export default function LoginPage() {
+  const rawNextPath =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("next");
   const nextPath = internalRedirectPathSchema.safeParse(
-    resolvedSearchParams?.next,
+    rawNextPath,
   );
 
   return (

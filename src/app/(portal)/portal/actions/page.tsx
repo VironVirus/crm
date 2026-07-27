@@ -1,15 +1,19 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import type { ComponentProps } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import PortalActionsPageView from "@/features/portal/actions/page-view";
-import { isFlutterwaveMockModeEnabled } from "@/lib/env/server";
+import {
+  StaticPageError,
+  StaticPageLoading,
+  useStaticPageData,
+} from "@/components/static/static-page-state";
 import { getMemberTier } from "@/lib/member-tier";
-import { ensureMemberRecord } from "@/lib/members";
 import { parseMoney, type LoanStatus } from "@/lib/loans";
 import {
   type MemberPaymentLoanOption,
   type MemberPaymentShareConfig,
 } from "@/lib/payments";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
   full_name: string;
@@ -49,36 +53,23 @@ type ShareConfigRecord = {
   share_value: number | string | null;
 };
 
-export default async function PortalActionsPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{
-    payment?: string;
-  }>;
-}) {
-  const resolvedSearchParams = await searchParams;
-  const supabase = await createServerSupabaseClient();
-  const admin = createSupabaseAdminClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login?next=/portal/actions");
-  }
-
+async function loadPortalActionsPage(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<ComponentProps<typeof PortalActionsPageView>> {
   const profileResult = await supabase
     .from("profiles")
     .select("full_name, member_number")
     .eq("id", user.id)
     .maybeSingle();
   const profile = profileResult.data as ProfileRecord | null;
-  const memberResult = await ensureMemberRecord(admin, {
-    memberId: user.id,
-    memberNumber: profile?.member_number ?? null,
-    select:
+  const memberResult = await supabase
+    .from("members")
+    .select(
       "onboarding_status, next_of_kin_name, next_of_kin_phone, next_of_kin_relationship, national_id_path, passport_photo_path, utility_bill_path",
-  });
+    )
+    .eq("id", user.id)
+    .maybeSingle();
   const member = memberResult.data as MemberRecord | null;
 
   const loansResult = await supabase
@@ -147,18 +138,27 @@ export default async function PortalActionsPage({
       }
     : null;
 
-  return (
-    <PortalActionsPageView
-      demoPaymentsEnabled={isFlutterwaveMockModeEnabled()}
-      memberId={user.id}
-      memberName={profile?.full_name ?? user.email ?? "Member"}
-      memberNumber={profile?.member_number ?? null}
-      memberTier={getMemberTier(member)}
-      paymentLoanOptions={paymentLoanOptions}
-      paymentStatus={
-        resolvedSearchParams?.payment === "success" ? "success" : null
-      }
-      shareConfig={shareConfig}
-    />
-  );
+  return {
+    demoPaymentsEnabled:
+      process.env.NEXT_PUBLIC_FLUTTERWAVE_MOCK_MODE === "true",
+    memberId: user.id,
+    memberName: profile?.full_name ?? user.email ?? "Member",
+    memberNumber: profile?.member_number ?? null,
+    memberTier: getMemberTier(member),
+    paymentLoanOptions,
+    paymentStatus:
+      new URLSearchParams(window.location.search).get("payment") === "success"
+        ? "success"
+        : null,
+    shareConfig,
+  };
+}
+
+export default function PortalActionsPage() {
+  const { data, error, isLoading } = useStaticPageData(loadPortalActionsPage);
+
+  if (isLoading && !data) return <StaticPageLoading label="Loading member actions…" />;
+  if (!data) return <StaticPageError>{error ?? "Member actions are unavailable."}</StaticPageError>;
+
+  return <PortalActionsPageView {...data} />;
 }

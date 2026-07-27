@@ -6,6 +6,7 @@ import {
 import { NextResponse, type NextRequest } from "next/server";
 import { MemberStatementDocument } from "@/lib/reporting/member-statement-document";
 import { getMemberStatementData } from "@/lib/reports/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   adminMemberStatementQuerySchema,
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
     const { end_date: endDate, member_id: memberId, start_date: startDate } =
       parsedQuery.data;
     const statement = await getMemberStatementData({
+      admin: createSupabaseAdminClient(),
       endDate,
       memberId,
       startDate,

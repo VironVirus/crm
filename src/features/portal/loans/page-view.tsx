@@ -1,5 +1,7 @@
 "use client";
 
+import { staticApiFetch } from "@/lib/static-api";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -352,7 +354,7 @@ export default function MemberLoansPageView({
     setSuccessMessage(null);
     setSuccessWarnings([]);
 
-    const response = await fetch("/api/loan-applications", {
+    const response = await staticApiFetch("/api/loan-applications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
