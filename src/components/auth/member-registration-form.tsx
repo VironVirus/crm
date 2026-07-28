@@ -13,7 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { buildEmailAuthRedirectUrl } from "@/lib/auth/email-auth";
+import {
+  buildEmailAuthRedirectUrl,
+  normalizeAuthErrorMessage,
+} from "@/lib/auth/email-auth";
 import {
   clearPendingRegistrationDraft,
   loadPendingRegistrationDraft,
@@ -263,7 +266,12 @@ export function MemberRegistrationForm() {
 
       if (error) {
         setStatusMessage(null);
-        setSubmitError(error.message);
+        setSubmitError(
+          normalizeAuthErrorMessage(
+            error.message,
+            "We could not send your verification code right now. Please try again.",
+          ),
+        );
         return;
       }
 
@@ -320,7 +328,12 @@ export function MemberRegistrationForm() {
       });
 
       if (error) {
-        setSubmitError(error.message);
+        setSubmitError(
+          normalizeAuthErrorMessage(
+            error.message,
+            "We could not verify your email code right now. Please try again.",
+          ),
+        );
         return;
       }
 
@@ -364,7 +377,12 @@ export function MemberRegistrationForm() {
       });
 
       if (error) {
-        setSubmitError(error.message);
+        setSubmitError(
+          normalizeAuthErrorMessage(
+            error.message,
+            "We could not resend your verification code right now. Please try again.",
+          ),
+        );
         return;
       }
 

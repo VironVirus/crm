@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { normalizeAuthErrorMessage } from "@/lib/auth/email-auth";
 import { COOPERATIVE_NAME } from "@/lib/brand";
 import { buildEmailAuthRedirectUrl } from "@/lib/auth/email-auth";
 import { activateProtectedSession } from "@/lib/session-state";
@@ -63,7 +64,10 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         setErrorMessage(
           normalizedMessage.includes("signups not allowed")
             ? "We could not find a member account for this email address yet. Please register first."
-            : error.message,
+            : normalizeAuthErrorMessage(
+                error.message,
+                "We could not send your sign-in code right now. Please try again.",
+              ),
         );
         return;
       }
@@ -111,7 +115,12 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(
+          normalizeAuthErrorMessage(
+            error.message,
+            "We could not verify your sign-in code right now. Please try again.",
+          ),
+        );
         return;
       }
 
@@ -152,7 +161,12 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(
+          normalizeAuthErrorMessage(
+            error.message,
+            "We could not resend your sign-in code right now. Please try again.",
+          ),
+        );
         return;
       }
 

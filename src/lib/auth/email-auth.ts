@@ -40,6 +40,34 @@ function decodeAuthMessage(value: string | null) {
   }
 }
 
+export function normalizeAuthErrorMessage(
+  value: unknown,
+  fallbackMessage: string,
+) {
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+
+    if (
+      trimmedValue &&
+      trimmedValue !== "{}" &&
+      trimmedValue !== "[]"
+    ) {
+      return trimmedValue;
+    }
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "message" in value &&
+    typeof value.message === "string"
+  ) {
+    return normalizeAuthErrorMessage(value.message, fallbackMessage);
+  }
+
+  return fallbackMessage;
+}
+
 export function sanitizeInternalRedirectPath(value?: string | null) {
   const parsed = internalRedirectPathSchema.safeParse(value);
   return parsed.success ? parsed.data : "/portal";
@@ -132,13 +160,25 @@ export async function finishSupabaseAuthFromUrl(
     });
 
     if (error) {
-      return { message: error.message, status: "error" };
+      return {
+        message: normalizeAuthErrorMessage(
+          error.message,
+          "We could not finish your sign-in from that email link. Please request a fresh one.",
+        ),
+        status: "error",
+      };
     }
   } else if (authCode) {
     const { error } = await supabase.auth.exchangeCodeForSession(authCode);
 
     if (error) {
-      return { message: error.message, status: "error" };
+      return {
+        message: normalizeAuthErrorMessage(
+          error.message,
+          "We could not finish your sign-in from that email link. Please request a fresh one.",
+        ),
+        status: "error",
+      };
     }
   } else if (hashParams.has("access_token") && hashParams.has("refresh_token")) {
     const accessToken = hashParams.get("access_token");
@@ -157,7 +197,13 @@ export async function finishSupabaseAuthFromUrl(
     });
 
     if (error) {
-      return { message: error.message, status: "error" };
+      return {
+        message: normalizeAuthErrorMessage(
+          error.message,
+          "We could not finish your sign-in from that email link. Please request a fresh one.",
+        ),
+        status: "error",
+      };
     }
   }
 
@@ -167,7 +213,13 @@ export async function finishSupabaseAuthFromUrl(
   } = await supabase.auth.getSession();
 
   if (error) {
-    return { message: error.message, status: "error" };
+    return {
+      message: normalizeAuthErrorMessage(
+        error.message,
+        "We could not confirm your sign-in session. Please try again.",
+      ),
+      status: "error",
+    };
   }
 
   if (!session?.access_token) {
