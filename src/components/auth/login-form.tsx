@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COOPERATIVE_NAME } from "@/lib/brand";
+import { buildEmailAuthRedirectUrl } from "@/lib/auth/email-auth";
 import { activateProtectedSession } from "@/lib/session-state";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import {
@@ -51,6 +52,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       const { error } = await supabase.auth.signInWithOtp({
         email: parsed.data.email,
         options: {
+          emailRedirectTo: buildEmailAuthRedirectUrl("login", nextPath),
           shouldCreateUser: false,
         },
       });
@@ -69,7 +71,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       setEmail(parsed.data.email);
       setOtpCode("");
       setStep("otp");
-      setStatusMessage(`A 6-digit sign-in code has been sent to ${parsed.data.email}.`);
+      setStatusMessage(
+        `A 6-digit sign-in code has been sent to ${parsed.data.email}. If your email app shows a sign-in button instead, you can tap it and we will finish the login automatically.`,
+      );
     } catch {
       setErrorMessage(
         "We could not send your sign-in code right now. Please check your connection and try again.",
@@ -142,6 +146,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       const { error } = await supabase.auth.signInWithOtp({
         email: parsed.data.email,
         options: {
+          emailRedirectTo: buildEmailAuthRedirectUrl("login", nextPath),
           shouldCreateUser: false,
         },
       });
@@ -151,7 +156,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         return;
       }
 
-      setStatusMessage(`A fresh 6-digit code has been sent to ${parsed.data.email}.`);
+      setStatusMessage(
+        `A fresh 6-digit code has been sent to ${parsed.data.email}. You can also use the email button if one appears.`,
+      );
     } catch {
       setErrorMessage(
         "We could not resend your sign-in code right now. Please try again.",
@@ -224,7 +231,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-foreground">Check your email</p>
                     <p className="text-sm text-muted-foreground">
-                      Enter the 6-digit code sent to {email}.
+                      Enter the 6-digit code sent to {email}. If your mailbox opens a sign-in button instead, tap it and we will bring you straight back in.
                     </p>
                   </div>
                 </div>

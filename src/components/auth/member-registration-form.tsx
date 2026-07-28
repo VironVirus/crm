@@ -3,7 +3,7 @@
 import { staticApiFetch } from "@/lib/static-api";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react";
@@ -13,6 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { buildEmailAuthRedirectUrl } from "@/lib/auth/email-auth";
+import {
+  clearPendingRegistrationDraft,
+  loadPendingRegistrationDraft,
+  savePendingRegistrationDraft,
+} from "@/lib/auth/pending-registration";
 import { COOPERATIVE_NAME } from "@/lib/brand";
 import { activateProtectedSession } from "@/lib/session-state";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -80,6 +86,7 @@ export function MemberRegistrationForm() {
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isResendingCode, setIsResendingCode] = useState(false);
   const [isFinalizingRegistration, setIsFinalizingRegistration] = useState(false);
+  const hasRestoredDraft = useRef(false);
 
   const {
     formState: { errors },
@@ -154,6 +161,7 @@ export function MemberRegistrationForm() {
       }
 
       activateProtectedSession();
+      clearPendingRegistrationDraft();
       setSuccess({
         email: payload?.email ?? values.email,
         fullName: payload?.fullName ?? values.fullName,
@@ -173,6 +181,44 @@ export function MemberRegistrationForm() {
       setIsFinalizingRegistration(false);
     }
   }
+
+  useEffect(() => {
+    if (hasRestoredDraft.current) {
+      return;
+    }
+
+    hasRestoredDraft.current = true;
+
+    const draft = loadPendingRegistrationDraft();
+
+    if (!draft) {
+      return;
+    }
+
+    const restoredDraft = draft;
+
+    reset(restoredDraft);
+    setRegistrationDraft(restoredDraft);
+    setVerificationStatus("pending");
+    setStatusMessage(
+      `We restored your pending registration for ${restoredDraft.email}. Enter the 6-digit code from your email, or use the sign-in button if your mailbox shows one.`,
+    );
+
+    async function resumeRegistration() {
+      const supabase = createBrowserSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        return;
+      }
+
+      await finalizeRegistration(restoredDraft);
+    }
+
+    void resumeRegistration();
+  }, [reset]);
 
   const submitRegistration = handleSubmit(async (values) => {
     setSubmitError(null);
@@ -203,6 +249,7 @@ export function MemberRegistrationForm() {
       const { error } = await supabase.auth.signInWithOtp({
         email: values.email,
         options: {
+          emailRedirectTo: buildEmailAuthRedirectUrl("register"),
           shouldCreateUser: true,
           data: {
             address: values.address,
@@ -220,13 +267,14 @@ export function MemberRegistrationForm() {
         return;
       }
 
+      savePendingRegistrationDraft(values);
       setRegistrationDraft(values);
       setVerificationCode("");
       setVerificationStatus("pending");
       setStatusMessage(
         payload?.status === "resume"
-          ? `We found your pending registration and sent a fresh 6-digit code to ${values.email}.`
-          : `A 6-digit verification code has been sent to ${values.email}.`,
+          ? `We found your pending registration and sent a fresh 6-digit code to ${values.email}. If your mailbox shows a sign-in button instead, you can use it and we will continue automatically.`
+          : `A 6-digit verification code has been sent to ${values.email}. If your mailbox shows a sign-in button instead, you can use it and we will continue automatically.`,
       );
     } catch {
       setStatusMessage(null);
@@ -303,6 +351,7 @@ export function MemberRegistrationForm() {
       const { error } = await supabase.auth.signInWithOtp({
         email: registrationDraft.email,
         options: {
+          emailRedirectTo: buildEmailAuthRedirectUrl("register"),
           shouldCreateUser: true,
           data: {
             address: registrationDraft.address,
@@ -319,8 +368,9 @@ export function MemberRegistrationForm() {
         return;
       }
 
+      savePendingRegistrationDraft(registrationDraft);
       setStatusMessage(
-        `A fresh 6-digit verification code has been sent to ${registrationDraft.email}.`,
+        `A fresh 6-digit verification code has been sent to ${registrationDraft.email}. You can also use the email button if one appears.`,
       );
     } catch {
       setSubmitError(
@@ -393,7 +443,7 @@ export function MemberRegistrationForm() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isPendingVerification
-                    ? `We sent the verification code to ${registrationDraft.email}.`
+                    ? `We sent the verification code to ${registrationDraft.email}. If your mailbox shows a sign-in button instead of the code, tap it and we will resume automatically.`
                     : "Finish registration to generate the member number and open the dashboard."}
                 </p>
               </div>
@@ -465,6 +515,7 @@ export function MemberRegistrationForm() {
               <Button
                 className="sm:col-span-2"
                 onClick={() => {
+                  clearPendingRegistrationDraft();
                   setSubmitError(null);
                   setStatusMessage(null);
                   setVerificationCode("");
@@ -573,7 +624,8 @@ export function MemberRegistrationForm() {
 
           <div className="rounded-3xl border border-border bg-secondary p-4 text-sm text-muted-foreground">
             We will send a 6-digit verification code to your email to finish your
-            registration securely.
+            registration securely. If your mail app shows a sign-in button instead,
+            the app can finish the same step automatically.
           </div>
 
           {statusMessage ? (

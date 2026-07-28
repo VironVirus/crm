@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import {
+  buildAuthCallbackForwardUrl,
+  hasSupabaseAuthCallback,
+} from "@/lib/auth/email-auth";
 
 export default function HomePage() {
   useEffect(() => {
+    if (hasSupabaseAuthCallback(window.location.href)) {
+      window.location.replace(buildAuthCallbackForwardUrl(window.location.href));
+      return;
+    }
+
     window.location.replace("/login/");
   }, []);
 

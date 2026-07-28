@@ -16,6 +16,7 @@ Supabase sends a magic link or an OTP depending on the email template contents.
 2. Open the template Supabase uses for email sign-in and signup in your dashboard version.
 3. Make sure the template includes `{{ .Token }}`.
 4. Remove any template content that depends only on `{{ .ConfirmationURL }}` if you want code-only verification.
+5. If you decide to keep a sign-in button as a fallback, the app now handles that too, but the simplest member experience is still code-only.
 
 Example message body:
 
@@ -24,6 +25,11 @@ Example message body:
 <h2>{{ .Token }}</h2>
 <p>This code will help you finish signing in securely.</p>
 ```
+
+Supabase reference:
+
+- [JavaScript `signInWithOtp`](https://supabase.com/docs/reference/javascript/auth-signinwithotp)
+- [Email Templates](https://supabase.com/docs/guides/auth/auth-email-templates)
 
 ## 3. Set the correct site URL
 
