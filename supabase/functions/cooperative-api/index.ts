@@ -856,6 +856,302 @@ function roundCurrency(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+type LoanScheduleInterestType = "flat" | "reducing_balance";
+
+type ExistingScheduleRecord = {
+  amount_paid: number | string | null;
+};
+
+type ScheduleRow = {
+  amount_paid: number;
+  due_date: string;
+  interest_due: number;
+  principal_due: number;
+  status: "pending";
+  total_due: number;
+};
+
+function addMonthsPreservingDay(baseDate: Date, monthsToAdd: number) {
+  const year = baseDate.getUTCFullYear();
+  const month = baseDate.getUTCMonth() + monthsToAdd;
+  const day = baseDate.getUTCDate();
+  const firstOfTargetMonth = new Date(Date.UTC(year, month, 1));
+  const lastDayOfTargetMonth = new Date(
+    Date.UTC(
+      firstOfTargetMonth.getUTCFullYear(),
+      firstOfTargetMonth.getUTCMonth() + 1,
+      0,
+    ),
+  ).getUTCDate();
+
+  return new Date(
+    Date.UTC(
+      firstOfTargetMonth.getUTCFullYear(),
+      firstOfTargetMonth.getUTCMonth(),
+      Math.min(day, lastDayOfTargetMonth),
+    ),
+  );
+}
+
+function toIsoDate(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function buildFlatSchedule(
+  principal: number,
+  annualInterestRate: number,
+  tenureMonths: number,
+  startDate: Date,
+) {
+  const schedule: ScheduleRow[] = [];
+  const totalInterest = roundCurrency(
+    principal * (annualInterestRate / 100) * (tenureMonths / 12),
+  );
+  const exactPrincipalPerMonth = principal / tenureMonths;
+  const exactInterestPerMonth = totalInterest / tenureMonths;
+  let remainingPrincipal = roundCurrency(principal);
+  let remainingInterest = roundCurrency(totalInterest);
+
+  for (let installment = 1; installment <= tenureMonths; installment += 1) {
+    const principalDue =
+      installment === tenureMonths
+        ? roundCurrency(remainingPrincipal)
+        : roundCurrency(exactPrincipalPerMonth);
+    const interestDue =
+      installment === tenureMonths
+        ? roundCurrency(remainingInterest)
+        : roundCurrency(exactInterestPerMonth);
+    const totalDue = roundCurrency(principalDue + interestDue);
+
+    schedule.push({
+      amount_paid: 0,
+      due_date: toIsoDate(addMonthsPreservingDay(startDate, installment)),
+      interest_due: interestDue,
+      principal_due: principalDue,
+      status: "pending",
+      total_due: totalDue,
+    });
+
+    remainingPrincipal = roundCurrency(remainingPrincipal - principalDue);
+    remainingInterest = roundCurrency(remainingInterest - interestDue);
+  }
+
+  return schedule;
+}
+
+function buildReducingBalanceSchedule(
+  principal: number,
+  annualInterestRate: number,
+  tenureMonths: number,
+  startDate: Date,
+) {
+  const schedule: ScheduleRow[] = [];
+  const monthlyRate = annualInterestRate / 100 / 12;
+  const exactMonthlyRepayment =
+    monthlyRate === 0
+      ? principal / tenureMonths
+      : (principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths)) /
+        (Math.pow(1 + monthlyRate, tenureMonths) - 1);
+  let remainingPrincipal = roundCurrency(principal);
+
+  for (let installment = 1; installment <= tenureMonths; installment += 1) {
+    const interestDue =
+      monthlyRate === 0
+        ? 0
+        : roundCurrency(remainingPrincipal * monthlyRate);
+    const principalDue =
+      installment === tenureMonths
+        ? roundCurrency(remainingPrincipal)
+        : roundCurrency(exactMonthlyRepayment - interestDue);
+    const totalDue = roundCurrency(principalDue + interestDue);
+
+    schedule.push({
+      amount_paid: 0,
+      due_date: toIsoDate(addMonthsPreservingDay(startDate, installment)),
+      interest_due: interestDue,
+      principal_due: principalDue,
+      status: "pending",
+      total_due: totalDue,
+    });
+
+    remainingPrincipal = roundCurrency(remainingPrincipal - principalDue);
+  }
+
+  return schedule;
+}
+
+async function syncLoanRepaymentSchedule(loanId: string) {
+  const loanResult = await admin
+    .from("loans")
+    .select(
+      "id, application_id, principal_amount, interest_rate, tenure_months, amount_disbursed, disbursed_at",
+    )
+    .eq("id", loanId)
+    .maybeSingle();
+  const loan = loanResult.data;
+
+  if (loanResult.error || !loan) {
+    return {
+      response: fail(
+        loanResult.error?.message ||
+          "Loan record not found for schedule generation.",
+        loanResult.error ? 400 : 404,
+      ),
+    };
+  }
+
+  const applicationResult = await admin
+    .from("loan_applications")
+    .select("loan_product_id")
+    .eq("id", loan.application_id)
+    .maybeSingle();
+  const application = applicationResult.data;
+
+  if (applicationResult.error || !application) {
+    return {
+      response: fail(
+        applicationResult.error?.message ||
+          "Loan application for this loan could not be found.",
+        applicationResult.error ? 400 : 404,
+      ),
+    };
+  }
+
+  const productResult = await admin
+    .from("loan_products")
+    .select("interest_type")
+    .eq("id", application.loan_product_id)
+    .maybeSingle();
+  const product = productResult.data;
+
+  if (productResult.error || !product) {
+    return {
+      response: fail(
+        productResult.error?.message ||
+          "Loan product for this loan could not be found.",
+        productResult.error ? 400 : 404,
+      ),
+    };
+  }
+
+  const existingScheduleResult = await admin
+    .from("loan_repayment_schedule")
+    .select("amount_paid")
+    .eq("loan_id", loanId);
+  const existingRows =
+    (existingScheduleResult.data as ExistingScheduleRecord[] | null) ?? [];
+
+  if (existingScheduleResult.error) {
+    return { response: fail(existingScheduleResult.error.message, 400) };
+  }
+
+  const hasRecordedPayments = existingRows.some(
+    (row) => amount(row.amount_paid) > 0,
+  );
+
+  if (hasRecordedPayments) {
+    return {
+      response: fail(
+        "Repayment schedule already contains paid installments and cannot be regenerated automatically.",
+        409,
+      ),
+    };
+  }
+
+  if (existingRows.length > 0) {
+    const deleteScheduleResult = await admin
+      .from("loan_repayment_schedule")
+      .delete()
+      .eq("loan_id", loanId);
+
+    if (deleteScheduleResult.error) {
+      return { response: fail(deleteScheduleResult.error.message, 400) };
+    }
+  }
+
+  const principalBase =
+    amount(loan.amount_disbursed) > 0
+      ? amount(loan.amount_disbursed)
+      : amount(loan.principal_amount);
+  const annualInterestRate = amount(loan.interest_rate);
+  const tenureMonths = Number(loan.tenure_months ?? 0);
+  const scheduleStartDate = loan.disbursed_at
+    ? new Date(loan.disbursed_at)
+    : new Date();
+
+  if (
+    principalBase <= 0 ||
+    annualInterestRate < 0 ||
+    !Number.isFinite(tenureMonths) ||
+    tenureMonths <= 0 ||
+    Number.isNaN(scheduleStartDate.getTime())
+  ) {
+    return {
+      response: fail(
+        "Loan record is incomplete. Ensure principal, interest rate, tenure, and disbursement timing are valid before generating the repayment schedule.",
+        400,
+      ),
+    };
+  }
+
+  const schedule =
+    (product.interest_type as LoanScheduleInterestType) === "flat"
+      ? buildFlatSchedule(
+          principalBase,
+          annualInterestRate,
+          tenureMonths,
+          scheduleStartDate,
+        )
+      : buildReducingBalanceSchedule(
+          principalBase,
+          annualInterestRate,
+          tenureMonths,
+          scheduleStartDate,
+        );
+
+  const totalRepayable = roundCurrency(
+    schedule.reduce((total, row) => total + row.total_due, 0),
+  );
+  const monthlyRepayment = roundCurrency(schedule[0]?.total_due ?? 0);
+  const maturityDate = schedule.at(-1)?.due_date ?? null;
+
+  const updateLoanResult = await admin
+    .from("loans")
+    .update({
+      maturity_date: maturityDate,
+      monthly_repayment: monthlyRepayment,
+      outstanding_balance: totalRepayable,
+      total_repayable: totalRepayable,
+    })
+    .eq("id", loanId);
+
+  if (updateLoanResult.error) {
+    return { response: fail(updateLoanResult.error.message, 400) };
+  }
+
+  const insertScheduleResult = await admin
+    .from("loan_repayment_schedule")
+    .insert(
+      schedule.map((row) => ({
+        loan_id: loanId,
+        ...row,
+      })),
+    );
+
+  if (insertScheduleResult.error) {
+    return { response: fail(insertScheduleResult.error.message, 400) };
+  }
+
+  return {
+    schedule: {
+      installmentsCreated: schedule.length,
+      maturityDate,
+      monthlyRepayment,
+      totalRepayable,
+    },
+  };
+}
+
 function loanEstimate(principal: number, annualRate: number, tenure: number, interestType: string) {
   if (interestType === "flat") {
     const interest = roundCurrency(principal * (annualRate / 100) * (tenure / 12));
@@ -958,7 +1254,7 @@ async function approveLoan(request: Request, applicationId: string) {
   if (!application) return fail("The selected application could not be found.", 404);
   if (application.status === "rejected" || application.status === "disbursed") return fail("This application cannot be approved in its current state.");
   const [{ data: product }, { data: existingLoan }] = await Promise.all([
-    admin.from("loan_products").select("name, interest_rate").eq("id", application.loan_product_id).maybeSingle(),
+    admin.from("loan_products").select("name, interest_rate, interest_type").eq("id", application.loan_product_id).maybeSingle(),
     admin.from("loans").select("id, amount_disbursed").eq("application_id", applicationId).maybeSingle(),
   ]);
   if (!product) return fail("The loan product attached to this application was not found.", 404);
@@ -975,9 +1271,9 @@ async function approveLoan(request: Request, applicationId: string) {
     ? await admin.from("loans").update(values).eq("id", existingLoan.id).select("id").single()
     : await admin.from("loans").insert(values).select("id").single();
   if (mutation.error || !mutation.data) return fail(mutation.error?.message ?? "Unable to create the loan approval record.", 500);
-  const schedule = await admin.functions.invoke("generate-repayment-schedule", { body: { loanId: mutation.data.id } });
-  const scheduleData = (schedule.data ?? {}) as Record<string, unknown>;
-  if (schedule.error || scheduleData.error) return fail(text(scheduleData.error) || schedule.error?.message || "Unable to generate the repayment schedule.", 500);
+  const scheduleResult = await syncLoanRepaymentSchedule(mutation.data.id);
+  if ("response" in scheduleResult) return scheduleResult.response;
+  const scheduleData = scheduleResult.schedule;
   const now = new Date().toISOString();
   const update = await admin.from("loan_applications").update({
     status: "approved",
@@ -1040,8 +1336,13 @@ async function disburseLoan(request: Request, applicationId: string) {
     created_by: auth.user.id,
   });
   if (transaction.error) return fail(transaction.error.message, 500);
-  const schedule = await admin.functions.invoke("generate-repayment-schedule", { body: { loanId: loan.id } });
-  if (schedule.error) return fail("The disbursement saved, but the repayment schedule could not be refreshed.", 500);
+  const scheduleResult = await syncLoanRepaymentSchedule(loan.id);
+  if ("response" in scheduleResult) {
+    return fail(
+      "The disbursement was saved, but the repayment schedule could not be refreshed.",
+      500,
+    );
+  }
   const result = await admin.from("loan_applications").update({ status: "disbursed" }).eq("id", applicationId);
   return result.error ? fail(result.error.message, 500) : json({ message: "The disbursement has been recorded and the repayment schedule was refreshed." });
 }

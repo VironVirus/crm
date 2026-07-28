@@ -8,7 +8,6 @@ import {
   StaticPageLoading,
   useStaticPageData,
 } from "@/components/static/static-page-state";
-import { getRequiredEnvironmentVariables } from "@/lib/env/requirements";
 import { parseMoney, type LoanInterestType, type LoanProductOption } from "@/lib/loans";
 import { parseSupabaseNumeric, type ShareConfig } from "@/lib/shares";
 
@@ -39,7 +38,6 @@ type ShareConfigRecord = {
 async function loadAdminSettingsPage(
   admin: SupabaseClient,
 ): Promise<ComponentProps<typeof AdminSettingsPageView>> {
-  const requirements = getRequiredEnvironmentVariables();
   const [loanProductsResult, shareConfigResult] = await Promise.all([
     admin
       .from("loan_products")
@@ -88,8 +86,6 @@ async function loadAdminSettingsPage(
 
   return {
     loanProducts,
-    recommended: requirements.recommended,
-    required: requirements.required,
     shareConfig,
   };
 }

@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type Resolver } from "react-hook-form";
-import { Loader2, Pencil, PlusCircle, Settings2, WalletCards } from "lucide-react";
+import { Loader2, Pencil, PlusCircle, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,11 +33,6 @@ import {
   loanProductManagementSchema,
   shareConfigUpdateSchema,
 } from "@/lib/validation/admin";
-
-type EnvironmentRequirement = {
-  description: string;
-  name: string;
-};
 
 type LoanProductFormValues = {
   description?: string | null;
@@ -372,13 +367,9 @@ function LoanProductDialog({
 
 export default function AdminSettingsPageView({
   loanProducts,
-  recommended,
-  required,
   shareConfig,
 }: {
   loanProducts: LoanProductOption[];
-  recommended: EnvironmentRequirement[];
-  required: EnvironmentRequirement[];
   shareConfig: ShareConfig | null;
 }) {
   const router = useRouter();
@@ -432,10 +423,10 @@ export default function AdminSettingsPageView({
           <div className="space-y-3">
             <Badge className="w-fit">Settings</Badge>
             <h2 className="max-w-2xl font-['Outfit'] text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
-              Operations and deployment setup
+              Cooperative settings
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              Manage the live loan products, share setup, and payment testing mode from one place.
+              Manage loan products and share setup from one clean admin workspace.
             </p>
           </div>
           <LoanProductDialog
@@ -452,79 +443,50 @@ export default function AdminSettingsPageView({
         </div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <WalletCards className="h-5 w-5 text-emerald-700 dark:text-emerald-200" />
-              <div>
-                <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-                  Mock Flutterwave test mode
-                </CardTitle>
-                <CardDescription>
-                  Enable demo payments that still post into the live dashboards.
-                </CardDescription>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Settings2 className="h-5 w-5 text-amber-700 dark:text-amber-200" />
+            <div>
+              <CardTitle className="font-['Outfit'] text-2xl text-foreground">
+                Share setup
+              </CardTitle>
+              <CardDescription>
+                Edit the unit value and minimum share entry target.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={saveShareConfig}>
+            <div className="space-y-2">
+              <Label htmlFor="shareValue">Share unit value</Label>
+              <Input id="shareValue" step="0.01" type="number" {...register("shareValue")} />
+              <FieldMessage message={errors.shareValue?.message} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minimumShares">Minimum shares</Label>
+              <Input id="minimumShares" type="number" {...register("minimumShares")} />
+              <FieldMessage message={errors.minimumShares?.message} />
+            </div>
+            {shareConfigError ? (
+              <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
+                {shareConfigError}
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
-              Set `FLUTTERWAVE_MOCK_MODE=true` and `APP_URL` to your deployed site URL on Netlify.
-            </div>
-            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
-              When enabled, member payments go through the demo checkout and still create real savings, loan, or share transactions for testing.
-            </div>
-            <div className="rounded-2xl border border-border bg-secondary px-4 py-4">
-              The test transactions stay visible in the dashboards until you clear them later from your database.
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Settings2 className="h-5 w-5 text-amber-700 dark:text-amber-200" />
-              <div>
-                <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-                  Share setup
-                </CardTitle>
-                <CardDescription>
-                  Edit the unit value and minimum share entry target.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={saveShareConfig}>
-              <div className="space-y-2">
-                <Label htmlFor="shareValue">Share unit value</Label>
-                <Input id="shareValue" step="0.01" type="number" {...register("shareValue")} />
-                <FieldMessage message={errors.shareValue?.message} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="minimumShares">Minimum shares</Label>
-                <Input id="minimumShares" type="number" {...register("minimumShares")} />
-                <FieldMessage message={errors.minimumShares?.message} />
-              </div>
-              {shareConfigError ? (
-                <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-100">
-                  {shareConfigError}
-                </div>
-              ) : null}
-              <Button disabled={isSubmitting || isRefreshing} type="submit">
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save share setup"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </section>
+            ) : null}
+            <Button disabled={isSubmitting || isRefreshing} type="submit">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save share setup"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -608,45 +570,6 @@ export default function AdminSettingsPageView({
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-              Required environment variables
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {required.map((item) => (
-              <div
-                key={item.name}
-                className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm"
-              >
-                <p className="font-medium text-foreground">{item.name}</p>
-                <p className="mt-1 text-muted-foreground">{item.description}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-['Outfit'] text-2xl text-foreground">
-              Supabase Edge Function secrets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {recommended.map((item) => (
-              <div
-                key={item.name}
-                className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm"
-              >
-                <p className="font-medium text-foreground">{item.name}</p>
-                <p className="mt-1 text-muted-foreground">{item.description}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </section>
     </div>
   );
 }
